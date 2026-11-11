@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Tokens de cor da Resolutto Family.
+ * Navy #040D40 e azul vivo #1431D9 vêm da paleta da Resolutto.
+ * Verde = positivo, âmbar = atenção, vermelho = negativo.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --surface-2: #eef0f7;
+  --border: #dde1ec;
+  --text: #0b1233;
+  --text-muted: #5b6382;
+  --brand-navy: #040d40;
+  --brand: #1431d9;
+  --brand-mid: #0f26a6;
+  --brand-contrast: #ffffff;
+  --positive: #0f8a4f;
+  --positive-soft: #e3f5ec;
+  --warning: #b26b00;
+  --warning-soft: #fdf1dc;
+  --negative: #c62828;
+  --negative-soft: #fbe5e5;
+  --focus: #1431d9;
+}
+
+.dark {
+  --bg: #010a26;
+  --surface: #071233;
+  --surface-2: #0c1a45;
+  --border: #1d2a5c;
+  --text: #e8ebf7;
+  --text-muted: #9aa3c7;
+  --brand-navy: #d9d9d9;
+  --brand: #6f86ff;
+  --brand-mid: #4a64f0;
+  --brand-contrast: #010a26;
+  --positive: #3ccf8a;
+  --positive-soft: #0d3326;
+  --warning: #f2b14a;
+  --warning-soft: #3a2a0c;
+  --negative: #ff7373;
+  --negative-soft: #3d1515;
+  --focus: #8ea0ff;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-navy: var(--brand-navy);
+  --color-brand: var(--brand);
+  --color-brand-mid: var(--brand-mid);
+  --color-brand-contrast: var(--brand-contrast);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --font-sans: "Figtree Variable", system-ui, sans-serif;
+  --font-display: "Archivo Variable", "Figtree Variable", system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Números financeiros sempre com algarismos tabulares */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }

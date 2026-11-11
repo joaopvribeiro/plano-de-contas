@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Resolutto Family
 
-## Getting Started
+Plataforma de planejamento financeiro familiar da Resolutto: Dashboard & DFC, Lançamentos, Patrimônio, Objetivos e Proteções. Cada família vê só os próprios dados; o consultor vê as famílias que atende.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Auth, Postgres com RLS, Storage) · Zod · Vitest · Playwright · Vercel.
+
+## Estado atual: Etapa 1 concluída
+
+- Esquema completo do banco (23 tabelas), RLS em todas, Storage privado por família.
+- Papéis: membro, consultor e consultor admin. Convite por e-mail.
+- Login por link mágico e por senha. Página para definir senha.
+- Layout com as 5 abas (topo no desktop, barra inferior no celular), tema claro e escuro.
+- Área do consultor: lista de famílias, nova família, convites e horizonte.
+- Seed da Família Demo.
+- 136 testes (130 de isolamento entre famílias) + 6 testes de ponta a ponta.
+
+As decisões estão em [`DECISOES.md`](DECISOES.md).
+
+## Como subir (primeira vez)
+
+### 1. Criar o projeto no Supabase
+
+1. Em [supabase.com](https://supabase.com), crie um projeto na região **São Paulo (sa-east-1)**.
+2. Em **Project Settings → API**, copie a URL, a chave *publishable* e a *service role*.
+3. Copie `.env.example` para `.env.local` e preencha.
+
+### 2. Aplicar as migrações e o seed
+
+Com a [Supabase CLI](https://supabase.com/docs/guides/cli):
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx supabase login
+npx supabase link --project-ref SEU_PROJECT_REF
+npx supabase db push            # aplica supabase/migrations
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Depois, no **SQL Editor** do Supabase, rode o conteúdo de `supabase/seed.sql` (cria a Família Demo).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Sem a CLI: rode no SQL Editor, na ordem, os arquivos de `supabase/migrations/` e depois o `seed.sql`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+> Nunca rode `supabase/tests/supabase-shim.sql` no Supabase. Ele existe só para os testes locais.
 
-## Learn More
+### 3. Configurar o Auth (Authentication no painel)
 
-To learn more about Next.js, take a look at the following resources:
+1. **URL Configuration**
+   - Site URL: `http://localhost:3000` (depois, o domínio da Vercel).
+   - Redirect URLs: `http://localhost:3000/auth/confirm**` e, depois, `https://SEU-DOMINIO/auth/confirm**`.
+2. **Sign In / Providers → Email**: mantenha e-mail habilitado e **desligue "Allow new users to sign up"**. Contas novas nascem só do convite.
+3. **Emails → SMTP Settings**: configure um SMTP próprio (Resend, Amazon SES etc.). O SMTP padrão do Supabase envia poucos e-mails por hora e não serve nem para os testes.
+4. **Emails → Templates**: troque o link dos modelos abaixo, para que funcionem em qualquer navegador:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   | Modelo | Link |
+   | --- | --- |
+   | Magic Link | `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email` |
+   | Invite user | `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=invite` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   Exemplo de corpo do Magic Link: `<p><a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Entrar na Resolutto Family</a></p>`
 
-## Deploy on Vercel
+### 4. Criar os usuários demo
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm install
+npm run seed:usuarios
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Cria você como **consultor admin** (`SEED_CONSULTOR_EMAIL`) e dois membros da Família Demo:
+`titular1.demo@resolutto.test` e `titular2.demo@resolutto.test`, com a senha `SEED_SENHA_DEMO`.
+
+> Para cadastrar seu sócio como admin depois: crie a conta dele (convide-o para qualquer família ou pelo painel do Supabase) e rode no SQL Editor:
+> `insert into public.consultores (user_id, nome, admin) select id, 'Nome do sócio', true from auth.users where email = 'email@dele';`
+
+### 5. Rodar
+
+```bash
+npm run dev     # http://localhost:3000
+```
+
+## Testes
+
+```bash
+npm run test:unit   # lógica (formatação; DFC e objetivos nas próximas etapas)
+npm run test:rls    # isolamento entre famílias (precisa de um Postgres local)
+npm run test:e2e    # Playwright
+npm run typecheck && npm run lint
+```
+
+Os testes de RLS criam e apagam o banco `resolutto_family_test`. Por padrão usam `postgres://postgres:postgres@localhost:5432/postgres`. Com o Supabase local (`npx supabase start`), aponte `TEST_DATABASE_ADMIN_URL` para `postgres://postgres:postgres@127.0.0.1:54322/postgres`.
+
+Eles rodam cada consulta como um usuário de verdade (`set role authenticated` + JWT), igual ao Supabase, e nunca com a service role. Também conferem que nenhuma tabela ficou sem RLS e que toda tabela com `familia_id` está coberta pelos testes.
+
+## Estrutura
+
+```
+supabase/
+  migrations/          esquema, RLS, gatilhos e Storage
+  seed.sql             Família Demo
+  tests/               shim do Supabase para testes locais
+scripts/seed-usuarios.mjs
+src/
+  app/(app)/           as 5 abas da família
+  app/consultor/       área do consultor
+  app/login, convite/, auth/confirm/, conta/
+  app/actions/         server actions (Zod em toda entrada)
+  lib/                 formatação, sessão, clientes do Supabase
+  proxy.ts             renova a sessão e protege as rotas
+tests/
+  rls/                 isolamento entre famílias
+  e2e/                 Playwright
+```
+
+## Segurança
+
+- Toda tabela tem RLS. A regra é única (`pode_acessar_familia`): membro da família, consultor atribuído ou admin.
+- A service role só é usada no servidor, para enviar convites. Nenhum dado de família passa por ela.
+- Arquivos ficam no bucket privado `familias`, sempre em `<familia_id>/...`, com a mesma regra da RLS.
+- A auditoria registra quem mudou o quê, sem gravar textos (descrições, observações).
