@@ -4,7 +4,7 @@ Plataforma de planejamento financeiro familiar da Resolutto: Dashboard & DFC, La
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Auth, Postgres com RLS, Storage) · Zod · Vitest · Playwright · Vercel.
 
-## Estado atual: Etapa 1 concluída
+## Estado atual: Etapas 1 e 2 concluídas
 
 - Esquema completo do banco (23 tabelas), RLS em todas, Storage privado por família.
 - Papéis: membro, consultor e consultor admin. Convite por e-mail.
@@ -12,7 +12,8 @@ Plataforma de planejamento financeiro familiar da Resolutto: Dashboard & DFC, La
 - Layout com as 5 abas (topo no desktop, barra inferior no celular), tema claro e escuro.
 - Área do consultor: lista de famílias, nova família, convites e horizonte.
 - Seed da Família Demo.
-- 136 testes (130 de isolamento entre famílias) + 6 testes de ponta a ponta.
+- **Lançamentos (Etapa 2):** lista com filtros na URL, busca, totais do filtro (previsto e realizado separados), novo lançamento com regra aprendida e mês sugerido pela fatura, edição, exclusão com confirmação, edição em massa, compras parceladas do mês, contas, categorias e regras.
+- 172 testes de unidade e de banco (130 de isolamento entre famílias) + 16 de ponta a ponta.
 
 As decisões estão em [`DECISOES.md`](DECISOES.md).
 
@@ -80,7 +81,7 @@ npm run dev     # http://localhost:3000
 ```bash
 npm run test:unit   # lógica (formatação; DFC e objetivos nas próximas etapas)
 npm run test:rls    # isolamento entre famílias (precisa de um Postgres local)
-npm run test:e2e    # Playwright
+npm run test:e2e    # Playwright (ver tests/e2e/LEIA-ME.md para rodar com dados)
 npm run typecheck && npm run lint
 ```
 

@@ -79,3 +79,15 @@ export function mesAtual(agora: Date = new Date()): string {
 export function jaPassou(iso: string, agora: Date = new Date()): boolean {
   return new Date(iso).getTime() < agora.getTime();
 }
+
+/** Data de hoje "AAAA-MM-DD" no fuso de São Paulo. */
+export function hojeISO(agora: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(agora);
+}
+
+/** Mês padrão do seletor: o atual, se estiver no horizonte; senão, o mais próximo dele. */
+export function mesPadraoNoHorizonte(meses: string[], atual: string): string {
+  if (meses.length === 0) return atual;
+  if (meses.includes(atual)) return atual;
+  return atual < meses[0] ? meses[0] : meses[meses.length - 1];
+}

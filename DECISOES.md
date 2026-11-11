@@ -38,6 +38,20 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Fontes servidas pelo próprio app** (pacotes Fontsource), sem chamada ao Google Fonts. Melhor para LGPD e funciona offline no build.
 - **Testes de RLS sem Docker.** Rodam num Postgres comum com um "shim" que recria só o mínimo do Supabase (papéis, `auth.uid()`, `storage.objects`). Também rodam contra `supabase start`, apontando `TEST_DATABASE_ADMIN_URL`.
 
+## Etapa 2
+
+- **Previsto e realizado nunca se somam.** Nos totais da lista, o número grande é o realizado (ou o previsto, se o filtro só tiver previstos), e o outro aparece embaixo.
+- **Transferências fora dos totais**, com uma linha informando quanto somam.
+- **Regra aprendida mais específica vence**: "UBER EATS" ganha de "UBER". A comparação ignora acento, caixa e pontuação. Padrões ficam gravados em maiúsculas.
+- **Regras preenchem só o que o usuário não mexeu.** Se você já escolheu a categoria, digitar a descrição não a troca.
+- **Mês de competência segue a fatura até você mudá-lo à mão.** Fechamento em dia que o mês não tem (31 em fevereiro) vale o último dia do mês.
+- **Data obrigatória só no Realizado.** Previstos podem ficar sem data (orçamento mensal).
+- **"Criar regra para os próximos?"** aparece ao corrigir categoria ou natureza de lançamento importado (`ia` ou `ia-parcela`), se nenhuma regra já cobrir aquele caso. O padrão sugerido é a primeira palavra significativa da descrição.
+- **Edição em massa**: escolher só a categoria aplica a classe padrão dela. Virar transferência limpa classe e categoria; virar receita ou despesa exige categoria.
+- **Contas com lançamentos não são excluídas**, só desativadas. Categorias são arquivadas (somem dos formulários, continuam nos lançamentos antigos).
+- **Quitou ou antecipou?** remove só as parcelas previstas posteriores ao mês aberto que ainda não foram ligadas a uma parcela real.
+- **Contas, categorias e regras** ficam como sub-abas de Lançamentos (`/lancamentos/contas`, `/categorias`, `/regras`). Membros e consultor podem editar.
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").

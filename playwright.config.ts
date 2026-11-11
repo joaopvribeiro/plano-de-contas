@@ -19,7 +19,8 @@ export default defineConfig({
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "celular", use: { ...devices["Pixel 7"] } },
+    // No celular só os testes que não alteram dados (os de lançamentos rodam uma vez, no desktop).
+    { name: "celular", use: { ...devices["Pixel 7"] }, testIgnore: /lancamentos\.spec/ },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

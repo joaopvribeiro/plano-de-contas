@@ -1,6 +1,7 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { envPublico } from "@/lib/env";
 
 /**
@@ -8,6 +9,9 @@ import { envPublico } from "@/lib/env";
  * Usa a sessão do usuário (cookies): todas as consultas passam pela RLS.
  */
 export async function criarClienteServidor() {
+  // Marca a renderização como dinâmica: o cliente do Supabase lê o relógio
+  // (validade da sessão), o que o Next 16 não permite durante a pré-renderização.
+  await connection();
   const env = envPublico();
   const cookieStore = await cookies();
 

@@ -93,3 +93,96 @@ export function Marca({ className }: { className?: string }) {
     </span>
   );
 }
+
+export function Seletor({
+  rotulo,
+  id,
+  erro,
+  className,
+  children,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { rotulo: string; id: string; erro?: string }) {
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <label htmlFor={id} className="text-sm font-medium">
+        {rotulo}
+      </label>
+      <select
+        id={id}
+        name={props.name ?? id}
+        aria-invalid={erro ? true : undefined}
+        aria-describedby={erro ? `${id}-erro` : undefined}
+        className={cn(
+          "h-10 rounded-lg border bg-surface px-3 text-sm focus:border-brand",
+          erro ? "border-negative" : "border-border",
+        )}
+        {...props}
+      >
+        {children}
+      </select>
+      {erro && (
+        <p id={`${id}-erro`} className="text-xs text-negative">
+          {erro}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Campo com mensagem de erro (versão do Campo para formulários validados). */
+export function CampoValidado({
+  rotulo,
+  id,
+  erro,
+  dica,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { rotulo: string; id: string; erro?: string; dica?: string }) {
+  const desc = erro ? `${id}-erro` : dica ? `${id}-dica` : undefined;
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <label htmlFor={id} className="text-sm font-medium">
+        {rotulo}
+      </label>
+      <input
+        id={id}
+        name={props.name ?? id}
+        aria-invalid={erro ? true : undefined}
+        aria-describedby={desc}
+        className={cn(
+          "h-10 rounded-lg border bg-surface px-3 text-sm placeholder:text-muted focus:border-brand",
+          erro ? "border-negative" : "border-border",
+        )}
+        {...props}
+      />
+      {erro ? (
+        <p id={`${id}-erro`} className="text-xs text-negative">
+          {erro}
+        </p>
+      ) : (
+        dica && (
+          <p id={`${id}-dica`} className="text-xs text-muted">
+            {dica}
+          </p>
+        )
+      )}
+    </div>
+  );
+}
+
+export function Caixa({
+  rotulo,
+  id,
+  dica,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { rotulo: string; id: string; dica?: string }) {
+  return (
+    <label htmlFor={id} className="flex cursor-pointer items-start gap-2.5 text-sm">
+      <input id={id} name={props.name ?? id} type="checkbox" className="mt-0.5 size-4 accent-[var(--brand)]" {...props} />
+      <span>
+        <span className="font-medium">{rotulo}</span>
+        {dica && <span className="block text-xs text-muted">{dica}</span>}
+      </span>
+    </label>
+  );
+}
