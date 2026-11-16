@@ -13,6 +13,9 @@ export async function sair() {
   redirect("/login");
 }
 
+/** Destinos permitidos ao abrir uma família (evita redirecionamento arbitrário). */
+const DESTINOS = ["/dashboard", "/lancamentos", "/lancamentos/importar-previsto", "/lancamentos/regras"] as const;
+
 /** Abre a visão de uma família (consultor ou membro de mais de uma). */
 export async function entrarNaFamilia(formData: FormData) {
   const id = z.uuid().parse(formData.get("familia_id"));
@@ -26,7 +29,8 @@ export async function entrarNaFamilia(formData: FormData) {
     path: "/",
     maxAge: 60 * 60 * 12,
   });
-  redirect("/dashboard");
+  const destino = DESTINOS.find((d) => d === formData.get("destino")) ?? "/dashboard";
+  redirect(destino);
 }
 
 /** Sai da visão da família e volta para a área do consultor. */

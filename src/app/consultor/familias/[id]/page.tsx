@@ -10,6 +10,7 @@ import { entrarNaFamilia } from "@/app/actions/sessao";
 import { cancelarConvite } from "@/app/actions/consultor";
 import { FormConvite, FormHorizonte } from "../../forms";
 import { CopiarLink } from "./copiar-link";
+import { EstruturarFamilia } from "./estruturar";
 
 export default async function PaginaFamilia({ params }: PageProps<"/consultor/familias/[id]">) {
   const { id } = await params;
@@ -46,6 +47,14 @@ export default async function PaginaFamilia({ params }: PageProps<"/consultor/fa
           </button>
         </form>
       </div>
+
+      <Cartao className="mb-6">
+        <h2 className="mb-1 text-lg font-semibold">Estruturar o planejamento</h2>
+        <p className="mb-4 text-sm text-muted">
+          Monte o orçamento previsto e as regras antes de convidar a família. Só você, como consultor, altera o previsto.
+        </p>
+        <EstruturarFamilia familiaId={familia.id} />
+      </Cartao>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Cartao>

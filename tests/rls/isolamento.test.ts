@@ -148,7 +148,7 @@ describe("membro da família A nos próprios dados", () => {
   it("cria, altera e apaga um lançamento na própria família", async () => {
     const r = await como(s.membroA, async (c) => {
       const ins = await c.query(
-        "insert into public.lancamentos (familia_id, tipo, mes_competencia, descricao, valor, classe) values ($1, 'Previsto', '2026-12', 'Teste', 99, 'Sonhos') returning id",
+        "insert into public.lancamentos (familia_id, tipo, mes_competencia, data, descricao, valor, classe) values ($1, 'Realizado', '2026-12', '2026-12-01', 'Teste', 99, 'Sonhos') returning id",
         [s.A.id],
       );
       const id = ins.rows[0].id;

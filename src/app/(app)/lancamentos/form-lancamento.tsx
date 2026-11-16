@@ -2,8 +2,19 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { Wand2 } from "lucide-react";
-import { Aviso, Botao, Caixa, CampoValidado, Seletor, cn } from "@/components/ui";
-import { salvarLancamento, type EstadoLancamento, type SugestaoRegra } from "@/app/actions/lancamentos";
+import {
+  Aviso,
+  Botao,
+  Caixa,
+  CampoValidado,
+  Seletor,
+  cn,
+} from "@/components/ui";
+import {
+  salvarLancamento,
+  type EstadoLancamento,
+  type SugestaoRegra,
+} from "@/app/actions/lancamentos";
 import {
   CLASSES,
   CLASSES_DESPESA,
@@ -16,7 +27,10 @@ import {
   type Natureza,
   type Regra,
 } from "@/lib/dominio";
-import { regraParaDescricao, sugerirCompetencia } from "@/lib/lancamentos/regras-de-negocio";
+import {
+  regraParaDescricao,
+  sugerirCompetencia,
+} from "@/lib/lancamentos/regras-de-negocio";
 import { formatMesLongo } from "@/lib/format";
 
 export type DadosForm = {
@@ -31,14 +45,31 @@ type Props = DadosForm & {
   mesPadrao: string;
   hoje: string;
   aoSalvar: (r: { ok: string; sugerirRegra?: SugestaoRegra }) => void;
+  podeEditarPrevisto: boolean;
 };
 
 function valorParaTexto(v: number) {
-  return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return v.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
-export function FormLancamento({ contas, categorias, regras, ativos, lancamento: l, mesPadrao, hoje, aoSalvar }: Props) {
-  const [estado, acao, salvando] = useActionState<EstadoLancamento, FormData>(salvarLancamento, undefined);
+export function FormLancamento({
+  contas,
+  categorias,
+  regras,
+  ativos,
+  lancamento: l,
+  mesPadrao,
+  hoje,
+  aoSalvar,
+  podeEditarPrevisto,
+}: Props) {
+  const [estado, acao, salvando] = useActionState<EstadoLancamento, FormData>(
+    salvarLancamento,
+    undefined,
+  );
 
   const [tipo, setTipo] = useState(l?.tipo ?? "Realizado");
   const [natureza, setNatureza] = useState<Natureza>(l?.natureza ?? "fluxo");
@@ -46,14 +77,18 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
   const [data, setData] = useState(l?.data ?? (l ? "" : hoje));
   const [contaId, setContaId] = useState(l?.conta_id ?? "");
   // null = segue a sugestão da fatura; texto = o usuário escolheu o mês.
-  const [mesManual, setMesManual] = useState<string | null>(l?.mes_competencia ?? null);
+  const [mesManual, setMesManual] = useState<string | null>(
+    l?.mes_competencia ?? null,
+  );
   const [categoriaId, setCategoriaId] = useState(l?.categoria_id ?? "");
   const [classe, setClasse] = useState<Classe | "">(l?.classe ?? "");
   const [assinatura, setAssinatura] = useState(l?.assinatura ?? false);
   const [regraAplicada, setRegraAplicada] = useState<string | null>(null);
 
   // O que o usuário mexeu à mão não é sobrescrito por sugestões automáticas.
-  const tocados = useRef(new Set<string>(l ? ["categoria", "classe", "conta", "natureza"] : []));
+  const tocados = useRef(
+    new Set<string>(l ? ["categoria", "classe", "conta", "natureza"] : []),
+  );
   const tocar = (campo: string) => tocados.current.add(campo);
 
   const conta = contas.find((c) => c.id === contaId);
@@ -71,7 +106,8 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
     }
     setRegraAplicada(r.padrao);
     if (!tocados.current.has("natureza")) setNatureza(r.natureza);
-    if (r.categoria_id && !tocados.current.has("categoria")) setCategoriaId(r.categoria_id);
+    if (r.categoria_id && !tocados.current.has("categoria"))
+      setCategoriaId(r.categoria_id);
     if (r.classe && !tocados.current.has("classe")) setClasse(r.classe);
     if (r.conta_id && !tocados.current.has("conta")) setContaId(r.conta_id);
     if (r.assinatura) setAssinatura(true);
@@ -87,7 +123,11 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
   // Avisa a lista quando salvar deu certo.
   const ultimoSalvo = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (estado?.ok && estado.salvoEm && estado.salvoEm !== ultimoSalvo.current) {
+    if (
+      estado?.ok &&
+      estado.salvoEm &&
+      estado.salvoEm !== ultimoSalvo.current
+    ) {
       ultimoSalvo.current = estado.salvoEm;
       aoSalvar({ ok: estado.ok, sugerirRegra: estado.sugerirRegra });
     }
@@ -110,20 +150,29 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
 
       {estado?.erro && <Aviso tom="negativo">{estado.erro}</Aviso>}
 
-      <div className="grid grid-cols-2 gap-2 rounded-lg bg-surface-2 p-1 text-sm" role="radiogroup" aria-label="Tipo">
-        {(["Realizado", "Previsto"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            role="radio"
-            aria-checked={tipo === t}
-            onClick={() => setTipo(t)}
-            className={cn("rounded-md py-1.5 font-medium", tipo === t ? "bg-surface shadow-sm" : "text-muted")}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      {podeEditarPrevisto && (
+        <div
+          className="grid grid-cols-2 gap-2 rounded-lg bg-surface-2 p-1 text-sm"
+          role="radiogroup"
+          aria-label="Tipo"
+        >
+          {(["Realizado", "Previsto"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="radio"
+              aria-checked={tipo === t}
+              onClick={() => setTipo(t)}
+              className={cn(
+                "rounded-md py-1.5 font-medium",
+                tipo === t ? "bg-surface shadow-sm" : "text-muted",
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
 
       <fieldset>
         <legend className="mb-1.5 text-sm font-medium">Natureza</legend>
@@ -139,7 +188,9 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
               }}
               className={cn(
                 "rounded-full border px-3 py-1 text-sm",
-                natureza === n ? "border-brand bg-brand/10 font-semibold text-brand" : "border-border text-muted hover:text-text",
+                natureza === n
+                  ? "border-brand bg-brand/10 font-semibold text-brand"
+                  : "border-border text-muted hover:text-text",
               )}
             >
               {ROTULO_NATUREZA[n]}
@@ -148,7 +199,8 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
         </div>
         {natureza === "transferencia" && (
           <p className="mt-1.5 text-xs text-muted">
-            Pagamento de fatura ou transferência entre contas da família. Fica fora da DFC.
+            Pagamento de fatura ou transferência entre contas da família. Fica
+            fora da DFC.
           </p>
         )}
       </fieldset>
@@ -166,7 +218,8 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
         />
         {regraAplicada && (
           <p className="mt-1 flex items-center gap-1 text-xs text-brand">
-            <Wand2 className="size-3.5" aria-hidden /> Regra aplicada: contém “{regraAplicada}”
+            <Wand2 className="size-3.5" aria-hidden /> Regra aplicada: contém “
+            {regraAplicada}”
           </p>
         )}
       </div>
@@ -221,7 +274,8 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
           />
           {ehCartao && mesSugerido && (
             <p className="mt-1 text-xs text-muted">
-              Fatura que fecha dia {conta?.dia_fechamento}: {formatMesLongo(mesSugerido)}.
+              Fatura que fecha dia {conta?.dia_fechamento}:{" "}
+              {formatMesLongo(mesSugerido)}.
               {mes !== mesSugerido && (
                 <button
                   type="button"
@@ -274,7 +328,11 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
       )}
 
       {receita && (
-        <Seletor rotulo="Tipo de receita" id="subtipo_receita" defaultValue={l?.subtipo_receita ?? "Salário"}>
+        <Seletor
+          rotulo="Tipo de receita"
+          id="subtipo_receita"
+          defaultValue={l?.subtipo_receita ?? "Salário"}
+        >
           {SUBTIPOS_RECEITA.map((s) => (
             <option key={s} value={s}>
               {s}
@@ -284,7 +342,11 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
       )}
 
       {(natureza === "aporte" || natureza === "resgate") && (
-        <Seletor rotulo="Investimento (opcional)" id="ativo_id" defaultValue={l?.ativo_id ?? ""}>
+        <Seletor
+          rotulo="Investimento (opcional)"
+          id="ativo_id"
+          defaultValue={l?.ativo_id ?? ""}
+        >
           <option value="">Não vincular</option>
           {ativos.map((a) => (
             <option key={a.id} value={a.id}>
@@ -302,15 +364,16 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
             defaultChecked={l?.estorno}
             dica="Abate o valor da categoria em vez de somar."
           />
-          {classe && (CLASSES_DESPESA as readonly string[]).includes(classe) && (
-            <Caixa
-              rotulo="Assinatura"
-              id="assinatura"
-              checked={assinatura}
-              onChange={(e) => setAssinatura(e.target.checked)}
-              dica="Cobrança recorrente fixa."
-            />
-          )}
+          {classe &&
+            (CLASSES_DESPESA as readonly string[]).includes(classe) && (
+              <Caixa
+                rotulo="Assinatura"
+                id="assinatura"
+                checked={assinatura}
+                onChange={(e) => setAssinatura(e.target.checked)}
+                dica="Cobrança recorrente fixa."
+              />
+            )}
         </div>
       )}
 
@@ -328,9 +391,23 @@ export function FormLancamento({ contas, categorias, regras, ativos, lancamento:
         />
       </div>
 
+      {!l && tipo === "Previsto" && podeEditarPrevisto && (
+        <CampoValidado
+          rotulo="Repetir nos meses seguintes"
+          id="repetir"
+          type="number"
+          min={0}
+          max={59}
+          defaultValue={0}
+          erro={erros.repetir}
+          dica="Ex.: 11 cria este previsto em 12 meses seguidos, a partir do mês de competência."
+        />
+      )}
+
       {l?.parcela && (
         <p className="text-xs text-muted">
-          Parcela {l.parcela}. Para quitar ou antecipar, use “Compras parceladas do mês”.
+          Parcela {l.parcela}. Para quitar ou antecipar, use “Compras parceladas
+          do mês”.
         </p>
       )}
 

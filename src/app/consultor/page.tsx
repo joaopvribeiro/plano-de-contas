@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, UserPlus, Users } from "lucide-react";
+import { ArrowRight, UserPlus, Users, Wand2 } from "lucide-react";
 import { Cartao, Selo } from "@/components/ui";
 import { TituloPagina } from "@/components/em-construcao";
 import { criarClienteServidor } from "@/lib/supabase/server";
@@ -92,6 +92,12 @@ export default async function PaginaConsultor() {
             <h2 className="mb-4 text-lg font-semibold">Nova família</h2>
             <FormNovaFamilia mesPadrao={atual} />
           </Cartao>
+          <Link
+            href="/consultor/regras-padrao"
+            className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium hover:bg-surface-2"
+          >
+            <Wand2 className="size-4 text-brand" aria-hidden /> Regras padrão para novas famílias
+          </Link>
         </aside>
       </div>
     </>

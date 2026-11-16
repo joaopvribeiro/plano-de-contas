@@ -11,12 +11,12 @@ const ITENS = [
   { href: "/lancamentos/regras", rotulo: "Regras" },
 ];
 
-export function SubnavLancamentos() {
+export function SubnavLancamentos({ consultor }: { consultor: boolean }) {
   const caminho = usePathname();
   return (
     <nav aria-label="Lançamentos" className="-mx-4 mb-5 overflow-x-auto px-4">
       <ul className="flex gap-1 border-b border-border">
-        {ITENS.map((i) => {
+        {[...ITENS, ...(consultor ? [{ href: "/lancamentos/importar-previsto", rotulo: "Importar previsto" }] : [])].map((i) => {
           const atual = caminho === i.href;
           return (
             <li key={i.href}>

@@ -124,7 +124,7 @@ function FormRegra({
     <form action={acao} className="flex flex-col gap-4">
       {regra && <input type="hidden" name="id" value={regra.id} />}
       {estado?.erro && <Aviso tom="negativo">{estado.erro}</Aviso>}
-      <CampoValidado rotulo="Quando a descrição contiver" id="padrao" defaultValue={regra?.padrao} placeholder="Ex.: PETZ" required minLength={2} className="uppercase" />
+      <CampoValidado rotulo="Quando a descrição contiver" id="padrao" defaultValue={regra?.padrao} placeholder="Ex.: PETZ" required minLength={2} />
       <Seletor rotulo="Natureza" id="natureza" value={natureza} onChange={(e) => setNatureza(e.target.value as Natureza)}>
         {(Object.keys(ROTULO_NATUREZA) as Natureza[]).map((n) => (
           <option key={n} value={n}>

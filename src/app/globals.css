@@ -25,6 +25,11 @@
   --negative: #c62828;
   --negative-soft: #fbe5e5;
   --focus: #1431d9;
+  /* Séries de gráfico (paleta categórica validada: CVD e contraste) */
+  --serie-1: #2a78d6;
+  --serie-2: #eb6834;
+  --serie-3: #1baf7a;
+  --grade: #e6e9f2;
 }
 
 .dark {
@@ -45,6 +50,10 @@
   --negative: #ff7373;
   --negative-soft: #3d1515;
   --focus: #8ea0ff;
+  --serie-1: #3987e5;
+  --serie-2: #d95926;
+  --serie-3: #199e70;
+  --grade: #1a275a;
 }
 
 @theme inline {
@@ -64,6 +73,9 @@
   --color-warning-soft: var(--warning-soft);
   --color-negative: var(--negative);
   --color-negative-soft: var(--negative-soft);
+  --color-serie-1: var(--serie-1);
+  --color-serie-2: var(--serie-2);
+  --color-serie-3: var(--serie-3);
   --font-sans: "Figtree Variable", system-ui, sans-serif;
   --font-display: "Archivo Variable", "Figtree Variable", system-ui, sans-serif;
 }
