@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Users } from "lucide-react";
+import { ArrowRight, UserPlus, Users } from "lucide-react";
 import { Cartao, Selo } from "@/components/ui";
 import { TituloPagina } from "@/components/em-construcao";
 import { criarClienteServidor } from "@/lib/supabase/server";
@@ -60,15 +60,25 @@ export default async function PaginaConsultor() {
                     {nMembros === 0 && <Selo tom="info">Sem membros</Selo>}
                   </p>
                 </div>
-                <form action={entrarNaFamilia}>
-                  <input type="hidden" name="familia_id" value={f.id} />
-                  <button
-                    type="submit"
-                    className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3 text-sm font-semibold text-brand-contrast hover:bg-brand-mid"
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href={`/consultor/familias/${f.id}`}
+                    aria-label={`Configurar e convidar membros: ${f.nome}`}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-semibold hover:bg-surface-2"
                   >
-                    Abrir <ArrowRight className="size-4" aria-hidden />
-                  </button>
-                </form>
+                    <UserPlus className="size-4" aria-hidden /> Configurar e convidar
+                  </Link>
+                  <form action={entrarNaFamilia}>
+                    <input type="hidden" name="familia_id" value={f.id} />
+                    <button
+                      type="submit"
+                      aria-label={`Abrir painel: ${f.nome}`}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3 text-sm font-semibold text-brand-contrast hover:bg-brand-mid"
+                    >
+                      Abrir painel <ArrowRight className="size-4" aria-hidden />
+                    </button>
+                  </form>
+                </div>
               </Cartao>
             );
           })}
