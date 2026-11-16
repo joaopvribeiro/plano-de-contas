@@ -15,6 +15,7 @@
     "seed:usuarios": "node --env-file=.env.local scripts/seed-usuarios.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.9.0",
     "@fontsource-variable/archivo": "^5.3.0",
     "@fontsource-variable/figtree": "^5.3.0",
     "@supabase/ssr": "^0.12.7",
