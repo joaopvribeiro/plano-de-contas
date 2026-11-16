@@ -80,6 +80,23 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Regras padrão**: 37 regras iniciais (fatura, aplicação/resgate, delivery, mercados, streaming, farmácias, pets, combustível, contas de consumo). Termos curtos que aparecem dentro de outras palavras foram evitados ("POSTO" casaria com "IMPOSTO"). Só admins editam a biblioteca. "Aplicar regras padrão" adiciona só as que faltam.
 - **Link de convite já usado** volta para a página do convite, que oferece um novo link.
 
+## Etapa 4
+
+- **Formatos**: PDF e fotos (JPG, PNG, WEBP; até 4 arquivos do mesmo documento) vão para a IA. OFX e CSV do banco são lidos sem IA; a IA só sugere categoria para as linhas que nenhuma regra cobre, recebendo apenas descrição, sentido e valor.
+- **Modelo**: `claude-haiku-5-5`, com saída estruturada (JSON Schema) para a resposta vir sempre no mesmo formato. Trocável por variável de ambiente.
+- **Autorização de IA** por família (versão `ia-v1`). O membro autoriza; o consultor pode registrar declarando que a família autorizou. Sem autorização, OFX e CSV funcionam sem sugestões.
+- **Limite mensal** (padrão 20 leituras de extrato): conta cada chamada à IA, inclusive a categorização de OFX/CSV e leituras que falham depois de chegar à IA. Uso e tokens ficam em `uso_ia`.
+- **Ordem de decisão** de cada linha: regra da família → sugestão da IA → padrão (entrada em conta vira Receita; pagamento recebido no cartão vira transferência) → pendente. Linha pendente de categoria bloqueia a confirmação.
+- **Mês de competência**: cartão = mês da fatura (o do fechamento lido, editável uma vez para a fatura toda); conta = mês da data, editável por linha.
+- **Estorno** calculado pelo sentido: entrada numa categoria de despesa, ou saída na de receita.
+- **Duplicadas** (critério do item 13) vêm desmarcadas, com o lançamento parecido ao lado.
+- **Parcelas**: "3/10" que casa com uma parcela prevista aberta da mesma compra (mesmo cartão, mesma parcela, valor ±R$ 1, descrição parecida) realiza essa prevista e herda a categoria dela. Sem prevista, a revisão oferece prever as parcelas seguintes (`ia-parcela`).
+- **Conferência**: fatura = compras − estornos (sem pagamentos) contra o total; extrato = entradas − saídas contra a variação do saldo. Diferença acima de R$ 0,05 aparece como aviso, sem bloquear.
+- **Confirmação numa transação só** (`confirmar_importacao`): grava tudo ou nada, com a RLS valendo. Data, valor e sentido vêm da leitura guardada no servidor, nunca do navegador.
+- **"Criar regra para os próximos"** aparece na revisão quando a pessoa corrige a categoria ou a natureza de uma linha.
+- **Arquivo original apagado** do Storage ao confirmar ou descartar (`arquivos_expurgados_em`). A leitura (`resposta_ia`) fica guardada até a política de expurgo da Etapa 9.
+- **Envio direto ao Storage** pelo navegador (com a regra de acesso do bucket), para não esbarrar no limite de tamanho das ações do servidor. A leitura roda numa ação de até 300 s.
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").

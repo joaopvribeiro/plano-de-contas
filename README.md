@@ -4,7 +4,7 @@ Plataforma de planejamento financeiro familiar da Resolutto: Dashboard & DFC, La
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Auth, Postgres com RLS, Storage) · Zod · Vitest · Playwright · Vercel.
 
-## Estado atual: Etapas 1, 2 e 3 concluídas
+## Estado atual: Etapas 1 a 4 concluídas
 
 - Esquema completo do banco (23 tabelas), RLS em todas, Storage privado por família.
 - Papéis: membro, consultor e consultor admin. Convite por e-mail.
@@ -14,6 +14,7 @@ Plataforma de planejamento financeiro familiar da Resolutto: Dashboard & DFC, La
 - Seed da Família Demo.
 - **Lançamentos (Etapa 2):** lista com filtros na URL, busca, totais do filtro (previsto e realizado separados), novo lançamento com regra aprendida e mês sugerido pela fatura, edição, exclusão com confirmação, edição em massa, compras parceladas do mês, contas, categorias e regras.
 - **Dashboard & DFC (Etapa 3):** cartões do mês, gráfico de entradas, saídas e caixa acumulado, distribuição das despesas sobre a receita com metas, matriz DFC (Previsto, Realizado, Divergência) com exportação. Importação do orçamento previsto por planilha, "repetir previsto", regras padrão. Previsto editável só pelo consultor.
+- **Importação de extratos e faturas (Etapa 4):** PDF e fotos lidos pela IA (Claude, da Anthropic), OFX e CSV lidos sem IA. Revisão antes de gravar: regras da família, sugestões da IA, mês da fatura, estornos, possíveis duplicadas, conferência com o total da fatura, parcelas ligadas às previstas e parcelas futuras. Autorização de IA por família e limite mensal de leituras. O arquivo original é apagado ao confirmar ou descartar.
 - Testes de unidade, de banco (isolamento entre famílias e permissões) e de ponta a ponta.
 
 ## Atualizar um Supabase que já está no ar
@@ -24,7 +25,11 @@ Cada etapa pode trazer migrações novas em `supabase/migrations`. Aplique antes
 npx supabase db push
 ```
 
-Sem a CLI: abra o **SQL Editor** e rode, em ordem, só os arquivos que ainda não rodou. Na Etapa 3 é o `20261116000100_etapa3_permissoes_regras_padrao.sql`.
+Sem a CLI: abra o **SQL Editor** e rode, em ordem, só os arquivos que ainda não rodou. Na Etapa 3 é o `20261116000100_etapa3_permissoes_regras_padrao.sql`; na Etapa 4, o `20261116000200_etapa4_importacao_ia.sql`.
+
+### Chave da IA (a partir da Etapa 4)
+
+Na Vercel (Settings → Environment Variables), cadastre `ANTHROPIC_API_KEY` com uma chave criada em console.anthropic.com. Opcional: `ANTHROPIC_MODEL_EXTRACAO` (padrão `claude-haiku-5-5`). Sem a chave, OFX e CSV continuam funcionando e PDFs e fotos ficam indisponíveis, com aviso na tela. `IA_SIMULADA=1` é só para testes automáticos: nunca cadastre na Vercel.
 
 As decisões estão em [`DECISOES.md`](DECISOES.md).
 
