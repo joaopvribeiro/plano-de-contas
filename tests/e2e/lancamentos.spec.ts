@@ -88,16 +88,19 @@ test("corrigir a categoria de um lançamento importado oferece criar regra", asy
   await expect(page.getByText("COMPRAS", { exact: true })).toBeVisible();
 });
 
-test("edição em massa muda o mês de vários lançamentos", async ({ page }) => {
+test("edição em massa muda o mês; o previsto do consultor fica de fora para o membro", async ({ page }) => {
   await page.goto("/lancamentos?mes=2026-10&q=streaming");
+  await expect(page.locator("tbody tr")).toHaveCount(2);
+  // O previsto aparece com cadeado e sem seleção para o membro.
+  await expect(page.getByLabel("Selecionar Streaming").nth(1)).toBeDisabled();
   await page.getByLabel("Selecionar todos").check();
   await page.getByRole("button", { name: "Editar selecionados" }).click();
   const dialogo = page.getByRole("dialog");
   await dialogo.getByLabel("Mês de competência").selectOption("2026-12");
   await dialogo.getByRole("button", { name: "Aplicar" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "2 lançamento(s) alterado(s)." })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "1 lançamento(s) alterado(s)." })).toBeVisible();
   await page.goto("/lancamentos?mes=2026-12&q=streaming");
-  await expect(page.locator("tbody tr")).toHaveCount(3);
+  await expect(page.locator("tbody tr")).toHaveCount(2);
 });
 
 test("exclusão pede confirmação", async ({ page }) => {

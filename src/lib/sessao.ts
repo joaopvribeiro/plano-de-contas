@@ -6,7 +6,8 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 
 export const COOKIE_FAMILIA = "rf_familia";
 
-export type FamiliaResumo = { id: string; nome: string; papel: "membro" | "consultor" };
+/** papel: como o usuário está ligado à família. consultor: se pode editar o planejamento (previsto, metas). */
+export type FamiliaResumo = { id: string; nome: string; papel: "membro" | "consultor"; consultor: boolean };
 
 export type Contexto = {
   usuario: { id: string; email: string };

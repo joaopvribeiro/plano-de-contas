@@ -52,6 +52,34 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Quitou ou antecipou?** remove só as parcelas previstas posteriores ao mês aberto que ainda não foram ligadas a uma parcela real.
 - **Contas, categorias e regras** ficam como sub-abas de Lançamentos (`/lancamentos/contas`, `/categorias`, `/regras`). Membros e consultor podem editar.
 
+## Decisões do João (16/11/2026)
+
+| Ponto | Decisão |
+| --- | --- |
+| Quem edita o orçamento previsto | **Só o consultor.** O cliente vê o previsto e lança o realizado. |
+| Reserva × Investimentos ao importar relatórios | Pós-fixados D+0/D+1 são sugeridos como Reserva até a meta; o resto vira Investimentos; o consultor ajusta na revisão. (Etapa 5) |
+| Bruto ou líquido | **Bruto, sempre.** O líquido é guardado quando o relatório informar. |
+| Regras padrão | Biblioteca da Resolutto copiada para cada família nova. |
+| Nova funcionalidade | Leitura de relatórios de investimento XP e BTG no Patrimônio (Etapa 5), com conferência da soma contra o patrimônio bruto do relatório. |
+| Nova ordem | Etapa 3 inclui importação do previsto por planilha e "repetir previsto". |
+
+## Etapa 3
+
+- **Previsto protegido no banco**, não só na tela: a RLS só deixa o consultor criar, alterar ou excluir previsto. Exceção: parcelas futuras geradas pela importação (`ia-parcela`), que o membro cria e remove ("Quitou ou antecipou?"). O membro também não transforma realizado em previsto.
+- **DFC somada no banco** (`resumo_dfc`), com a RLS valendo. Evita o limite de 1.000 linhas por consulta do Supabase; a conta da DFC é linear, então o resultado é o mesmo.
+- **Transferência não marca o mês como "com realizado".** Um mês cujo único realizado é o pagamento de fatura continua "—" no realizado.
+- **Caixa realizado**: começa no saldo inicial; mês sem realizado entre meses com realizado repete o anterior; depois do último mês com realizado fica vazio.
+- **Divergência colorida pelo sentido**: receita e saldo acima do previsto em verde; despesa acima do previsto em vermelho.
+- **Distribuição sobre a receita** usa o realizado quando o mês tem; senão, o previsto. Até a meta: verde; até 5 pontos acima: âmbar; mais: vermelho.
+- **Cartões do mês** mostram o realizado em destaque e o previsto embaixo; sem realizado, mostram o previsto em cinza.
+- **Gráfico**: barras de receitas e despesas previstas; linhas do caixa acumulado previsto (tracejada) e realizado (contínua). Paleta categórica validada para daltonismo nos temas claro e escuro.
+- **Matriz**: valores inteiros na grade (centavos no "passar o mouse" e no CSV). Clique em receita ou classe de despesa abre os lançamentos filtrados.
+- **Exportação**: CSV com ponto e vírgula e BOM, que abre direto no Excel em português. Arquivo .xlsx nativo fica para depois, se fizer falta.
+- **Importação do previsto**: colar do Excel/Google Sheets ou CSV (UTF-8 ou Latin-1). Cabeçalho flexível (com ou sem acento, sinônimos). Linhas com erro são mostradas com o número da linha e não entram; as válidas entram. Opção de substituir o previsto importado por planilha nos mesmos meses (previstos manuais e parcelas não são apagados). Limite de 2.000 linhas.
+- **Repetir previsto**: no formulário, "repetir nos meses seguintes" (até 59) cria o mesmo previsto em meses consecutivos.
+- **Regras padrão**: 37 regras iniciais (fatura, aplicação/resgate, delivery, mercados, streaming, farmácias, pets, combustível, contas de consumo). Termos curtos que aparecem dentro de outras palavras foram evitados ("POSTO" casaria com "IMPOSTO"). Só admins editam a biblioteca. "Aplicar regras padrão" adiciona só as que faltam.
+- **Link de convite já usado** volta para a página do convite, que oferece um novo link.
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").

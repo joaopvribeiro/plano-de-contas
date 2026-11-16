@@ -7,7 +7,7 @@ export default async function LayoutLancamentos({ children }: { children: React.
   return (
     <>
       <TituloPagina titulo="Lançamentos" subtitulo={familia.nome} />
-      <SubnavLancamentos />
+      <SubnavLancamentos consultor={familia.consultor} />
       {children}
     </>
   );

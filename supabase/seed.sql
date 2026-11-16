@@ -197,7 +197,9 @@ begin
   insert into public.regras (familia_id, padrao, natureza, categoria_id, classe, conta_id, assinatura) values
     (f, 'PETZ', 'fluxo', (cat->>'Pets')::uuid, 'Padrão de vida', c_nu, false),
     (f, 'PAGAMENTO FATURA', 'transferencia', null, null, c_cc, false),
-    (f, 'NETFLIX', 'fluxo', (cat->>'Gastos Livres')::uuid, 'Padrão de vida', c_nu, true);
+    (f, 'NETFLIX', 'fluxo', (cat->>'Gastos Livres')::uuid, 'Padrão de vida', c_nu, true)
+  -- A família já nasce com as regras padrão; aqui só ajustamos a conta das três.
+  on conflict (familia_id, padrao) do update set conta_id = excluded.conta_id;
 
   -- -------------------------------------------------------------------------
   -- Objetivos: projetos

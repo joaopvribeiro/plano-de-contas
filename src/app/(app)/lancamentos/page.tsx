@@ -79,6 +79,7 @@ export default async function PaginaLancamentos({ searchParams }: PageProps<"/la
           categorias={cadastros.categorias}
           regras={cadastros.regras}
           ativos={cadastros.ativos}
+          podeEditarPrevisto={familia.consultor}
         />
       </section>
 

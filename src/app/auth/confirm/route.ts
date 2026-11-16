@@ -26,6 +26,12 @@ export async function GET(request: NextRequest) {
   }
 
   if (!ok) {
+    // Link de convite já usado: volta para a página do convite, que oferece um novo link de acesso.
+    if (/^\/convite\/[0-9a-f-]{36}$/i.test(destino)) {
+      const convite = new URL(destino, origin);
+      convite.searchParams.set("link", "usado");
+      return NextResponse.redirect(convite);
+    }
     const login = new URL("/login", origin);
     login.searchParams.set("erro", "link");
     login.searchParams.set("next", destino);

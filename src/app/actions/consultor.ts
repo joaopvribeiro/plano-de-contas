@@ -122,3 +122,64 @@ export async function cancelarConvite(formData: FormData) {
   await supabase.from("convites").delete().eq("id", id).is("aceito_em", null);
   revalidatePath(`/consultor/familias/${familia}`);
 }
+
+/** Copia para a família as regras padrão que ela ainda não tem. */
+export async function aplicarRegrasPadrao(familiaId: string): Promise<{ erro?: string; criadas?: number }> {
+  const id = z.uuid().safeParse(familiaId);
+  if (!id.success) return { erro: "Família inválida." };
+  const supabase = await criarClienteServidor();
+  const { data, error } = await supabase.rpc("aplicar_regras_modelo", { p_familia: id.data });
+  if (error) return { erro: "Não foi possível aplicar as regras padrão." };
+  revalidatePath(`/consultor/familias/${id.data}`);
+  revalidatePath("/lancamentos", "layout");
+  return { criadas: data as number };
+}
+
+// ---------------------------------------------------------------------------
+// Biblioteca de regras padrão (admin)
+// ---------------------------------------------------------------------------
+
+const esquemaRegraModelo = z
+  .object({
+    padrao: z
+      .string()
+      .transform((p) =>
+        p
+          .normalize("NFD")
+          .replace(/[̀-ͯ]/g, "")
+          .toUpperCase()
+          .replace(/[^A-Z0-9]+/g, " ")
+          .trim(),
+      )
+      .pipe(z.string().min(2, "O padrão precisa de pelo menos 2 letras.").max(60)),
+    natureza: z.enum(["fluxo", "transferencia", "aporte", "resgate"]),
+    categoria_nome: z
+      .string()
+      .optional()
+      .transform((v) => v?.trim() || null),
+    classe: z
+      .string()
+      .optional()
+      .transform((v) => v || null)
+      .pipe(z.enum(["Receita", "Despesa básica", "Padrão de vida", "Doações", "Sonhos"]).nullable()),
+    assinatura: z.boolean(),
+  })
+  .refine((r) => r.natureza !== "fluxo" || r.categoria_nome, { message: "Informe a categoria." })
+  .transform((r) => (r.natureza === "fluxo" ? r : { ...r, categoria_nome: null, classe: null, assinatura: false }));
+
+export async function salvarRegraModelo(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const d = esquemaRegraModelo.safeParse({ ...Object.fromEntries(fd), assinatura: fd.get("assinatura") === "on" });
+  if (!d.success) return { erro: d.error.issues[0].message };
+  const supabase = await criarClienteServidor();
+  const { error } = await supabase.from("regras_modelo").upsert(d.data, { onConflict: "padrao" });
+  if (error) return { erro: error.code === "42501" ? "Só administradores alteram a biblioteca." : "Não foi possível salvar." };
+  revalidatePath("/consultor/regras-padrao");
+  return { ok: `Regra "${d.data.padrao}" salva. Vale para as famílias criadas a partir de agora.` };
+}
+
+export async function excluirRegraModelo(fd: FormData) {
+  const id = z.uuid().parse(fd.get("id"));
+  const supabase = await criarClienteServidor();
+  await supabase.from("regras_modelo").delete().eq("id", id);
+  revalidatePath("/consultor/regras-padrao");
+}

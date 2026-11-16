@@ -11,8 +11,9 @@ function mascarar(email: string) {
   return `${nome.slice(0, 2)}${"•".repeat(Math.max(3, nome.length - 2))}@${dominio}`;
 }
 
-export default async function PaginaConvite({ params }: PageProps<"/convite/[token]">) {
+export default async function PaginaConvite({ params, searchParams }: PageProps<"/convite/[token]">) {
   const { token } = await params;
+  const linkUsado = (await searchParams).link === "usado";
   const supabase = await criarClienteServidor();
 
   const valido = z.uuid().safeParse(token).success;
@@ -49,7 +50,14 @@ export default async function PaginaConvite({ params }: PageProps<"/convite/[tok
                     Saia e entre com o e-mail convidado.
                   </Aviso>
                 ) : (
-                  <FormPedirAcesso token={token} emailMascarado={mascarar(convite.email)} />
+                  <>
+                    {linkUsado && (
+                      <Aviso tom="atencao" className="mb-3">
+                        O link que você abriu já foi usado (cada link de e-mail vale uma vez). Peça um novo abaixo.
+                      </Aviso>
+                    )}
+                    <FormPedirAcesso token={token} emailMascarado={mascarar(convite.email)} />
+                  </>
                 )}
               </div>
             </>
