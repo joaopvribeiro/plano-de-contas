@@ -134,6 +134,13 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Equity** (participação em empresas): empresa, % da família e como estimar: valuation informado, ou múltiplo do lucro ou do faturamento anual. Valor da participação = valor da empresa × %. Entra no patrimônio líquido, fora da carteira investida e da liberdade financeira. Atualiza pelo "Editar" (não pelo "Atualizar saldo"), para manter a conta. Na evolução, vale desde antes do cadastro, como os bens.
 - "Conta para a liberdade financeira" só aparece em investimentos, previdência e fundos fechados.
 
+## Projeção do orçamento (17/11, pedido do João)
+
+- **Projetar orçamento** (Lançamentos, só consultor): parte de um mês já montado e repete cada linha nos meses seguintes do horizonte. Por linha: todos os meses, só neste mês, meses escolhidos ou pelos próximos N meses, e o valor dos próximos meses (para o 13º: só em dezembro, com o valor da segunda parcela).
+- **Sugestão automática**: 13º, décimo, férias, PLR, bônus, IPVA, matrícula, restituição e prêmio começam como "só neste mês"; o resto, "todos os meses".
+- **Sem duplicar**: mês de destino que já tem previsto com a mesma descrição e conta é pulado. Parcelas ficam de fora (têm o próprio controle).
+- A importação do previsto termina com o atalho "Projetar para os próximos meses".
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").

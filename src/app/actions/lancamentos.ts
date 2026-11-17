@@ -5,10 +5,11 @@ import { z } from "zod";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { obterFamiliaAtiva } from "@/lib/sessao";
 import { esquemaEdicaoEmMassa, esquemaLancamento } from "@/lib/lancamentos/schema";
-import { normalizarCampos, regraParaDescricao, sugerirPadrao } from "@/lib/lancamentos/regras-de-negocio";
+import { lerValorBRL, normalizarCampos, regraParaDescricao, sugerirPadrao } from "@/lib/lancamentos/regras-de-negocio";
 import { somarMeses } from "@/lib/format";
 import type { LinhaPrevisto } from "@/lib/planilha/previsto";
 import type { Classe, Natureza } from "@/lib/dominio";
+import { REPETICOES, chaveExistente, montarProjecao, type RegraLinha } from "@/lib/lancamentos/projecao";
 
 export type SugestaoRegra = {
   padrao: string;
@@ -319,4 +320,78 @@ export async function importarPrevisto(entrada: { linhas: LinhaPrevisto[]; subst
   }
   revalidar();
   return { importadas: registros.length, removidas };
+}
+
+// ---------------------------------------------------------------------------
+// Projeção do orçamento previsto (consultor)
+// ---------------------------------------------------------------------------
+
+const esquemaProjecao = z.object({
+  origem: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  linhas: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        repeticao: z.enum(REPETICOES),
+        meses: z.array(z.string().regex(/^\d{4}-\d{2}$/)).max(120).optional(),
+        n: z.number().int().min(0).max(120).optional(),
+        valor: z.string(),
+      }),
+    )
+    .min(1)
+    .max(500),
+});
+
+export async function projetarOrcamento(entrada: z.input<typeof esquemaProjecao>): Promise<{ erro?: string; criados?: number; repetidos?: number }> {
+  const { familia, ctx } = await obterFamiliaAtiva();
+  if (!familia.consultor) return { erro: "Só o consultor projeta o orçamento previsto." };
+  const p = esquemaProjecao.safeParse(entrada);
+  if (!p.success) return { erro: "Dados inválidos. Recarregue a página." };
+
+  const regras = new Map<string, RegraLinha>();
+  for (const l of p.data.linhas) {
+    const valor = lerValorBRL(l.valor);
+    if (valor === null || valor <= 0) return { erro: "Há um valor inválido nos próximos meses (use, por exemplo, 1.234,56)." };
+    regras.set(l.id, { repeticao: l.repeticao, meses: l.meses, n: l.n, valor });
+  }
+
+  const supabase = await criarClienteServidor();
+  const [{ data: fam }, { data: origem }] = await Promise.all([
+    supabase.from("familias").select("inicio_planejamento, meses_horizonte").eq("id", familia.id).single(),
+    supabase
+      .from("lancamentos")
+      .select("id, descricao, valor, conta_id, categoria_id, classe, natureza, assinatura, obs")
+      .eq("familia_id", familia.id)
+      .eq("tipo", "Previsto")
+      .eq("mes_competencia", p.data.origem)
+      .is("parcela", null)
+      .in("id", [...regras.keys()]),
+  ]);
+  if (!fam || !origem?.length) return { erro: "Não encontrei as linhas do mês de origem. Recarregue a página." };
+  const fim = somarMeses(fam.inicio_planejamento, fam.meses_horizonte - 1);
+
+  const { data: futuros } = await supabase
+    .from("lancamentos")
+    .select("mes_competencia, descricao, conta_id")
+    .eq("familia_id", familia.id)
+    .eq("tipo", "Previsto")
+    .gt("mes_competencia", p.data.origem)
+    .lte("mes_competencia", fim)
+    .limit(10000);
+  const existentes = new Set((futuros ?? []).map((f) => chaveExistente(f.mes_competencia, f.descricao, f.conta_id)));
+
+  const { novos, repetidos } = montarProjecao(
+    origem.map((o) => ({ ...o, valor: Number(o.valor) })),
+    regras,
+    p.data.origem,
+    fim,
+    existentes,
+  );
+  const registros = novos.map((n) => ({ ...n, familia_id: familia.id, tipo: "Previsto", origem: "planilha", criado_por: ctx.usuario.id }));
+  for (let i = 0; i < registros.length; i += 500) {
+    const { error } = await supabase.from("lancamentos").insert(registros.slice(i, i + 500));
+    if (error) return { erro: "Parte da projeção não foi gravada. Recarregue e tente de novo (o que já foi gravado não se repete).", criados: i };
+  }
+  revalidar();
+  return { criados: registros.length, repetidos };
 }
