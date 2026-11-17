@@ -11,7 +11,7 @@ import { ROTULO_ESTRATEGIA, type RelatorioLido } from "@/lib/relatorio/esquema";
 import type { ConferenciaRelatorio, LinhaRelatorio, Sumido } from "@/lib/relatorio/revisao";
 
 type Existente = { id: string; nome: string; categoria: CategoriaAtivo; instituicao: string | null; valor: number };
-const CATEGORIAS_RELATORIO = CATEGORIAS_ATIVO.filter((c) => c !== "Consórcio");
+const CATEGORIAS_RELATORIO = CATEGORIAS_ATIVO.filter((c) => c !== "Consórcio" && c !== "Equity" && c !== "Bem");
 
 const MOTIVO: Record<LinhaRelatorio["motivo"], string> = {
   existente: "atualiza ativo já cadastrado",

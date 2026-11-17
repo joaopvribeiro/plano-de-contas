@@ -49,6 +49,45 @@ test("atualizar saldo, adicionar ativo e dívida", async ({ page }) => {
   await expect(cartao(page, "Patrimônio líquido")).toContainText("R$ 1.043.600,00");
 });
 
+test("campos por categoria: FGTS, bem, previdência e equity", async ({ page }) => {
+  await page.goto("/patrimonio");
+  await page.getByRole("button", { name: "Adicionar ativo" }).click();
+  const d = page.getByRole("dialog");
+  const categoria = d.getByLabel("Categoria");
+
+  await categoria.selectOption("FGTS");
+  await expect(d.getByLabel("Nome")).toHaveCount(0);
+  await expect(d.getByLabel("Liquidez")).toHaveCount(0);
+  await expect(d.getByLabel("Conta para a liberdade financeira")).toHaveCount(0);
+
+  await categoria.selectOption("Bem");
+  await expect(d.getByLabel("Valor de mercado (R$)")).toBeVisible();
+  await expect(d.getByLabel("Tipo do bem")).toBeVisible();
+  await expect(d.getByLabel("Risco")).toHaveCount(0);
+  await expect(d.getByLabel("Instituição")).toHaveCount(0);
+
+  await categoria.selectOption("Previdência");
+  await expect(d.getByLabel("Tipo do plano")).toBeVisible();
+
+  await categoria.selectOption("Consórcio");
+  await expect(d.getByLabel("Liquidez")).toHaveCount(0);
+  await expect(d.getByLabel("Administradora")).toBeVisible();
+
+  await categoria.selectOption("Equity");
+  await d.getByLabel("Empresa", { exact: true }).fill("Padaria Bom Dia Ltda.");
+  await d.getByLabel("Participação da família (%)").fill("50");
+  await d.getByLabel("Como estimar").selectOption("lucro");
+  await d.getByLabel("Lucro anual (R$)").fill("400.000");
+  await d.getByLabel(/Múltiplo/).fill("5");
+  await expect(d.getByRole("status")).toContainText("R$ 1.000.000,00");
+  await d.getByRole("button", { name: "Adicionar ativo" }).click();
+
+  const linha = page.getByRole("listitem").filter({ hasText: "Padaria Bom Dia Ltda." });
+  await expect(linha).toContainText("50% da empresa · estimado: 5× o lucro anual de R$ 400.000,00");
+  await expect(page.getByRole("heading", { name: "Participações em empresas" })).toBeVisible();
+  await expect(cartao(page, "Patrimônio líquido")).toContainText("empresas R$ 1.000.000,00");
+});
+
 test("relatório: conferência, reserva até a meta, confirmação e mês seguinte atualizando", async ({ page }) => {
   await page.goto("/patrimonio/importar", { waitUntil: "networkidle" });
   // A autorização pode já ter sido dada nos testes da Etapa 4 (é por família).

@@ -128,6 +128,12 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Arquivo original da apólice fica guardado** (diferente de extratos e relatórios), aberto por link temporário de 5 minutos; sai junto quando a apólice é excluída. O texto da autorização de IA foi ajustado para dizer isso.
 - **Incluir prêmio no orçamento** (consultor): previsto mensal, classe Despesa básica, marcado como assinatura, categoria pelo tipo (vida e saúde → Saúde, auto → Transporte, residencial → Moradia, outro → Outros), do mês atual (ou início da vigência) até o fim do horizonte ou da vigência, sem repetir meses.
 
+## Ajustes do Patrimônio (17/11, pedido do João)
+
+- **Campos por categoria**: investimentos, reserva e fundos fechados com todos os campos; previdência ganha o tipo do plano (PGBL/VGBL); consórcio sem liquidez e risco (instituição vira "Administradora"); bem só com tipo (imóvel, terreno, veículo, outro), valor de mercado (FIPE para veículos) e data da avaliação; FGTS só saldo e data (o nome fica "FGTS").
+- **Equity** (participação em empresas): empresa, % da família e como estimar: valuation informado, ou múltiplo do lucro ou do faturamento anual. Valor da participação = valor da empresa × %. Entra no patrimônio líquido, fora da carteira investida e da liberdade financeira. Atualiza pelo "Editar" (não pelo "Atualizar saldo"), para manter a conta. Na evolução, vale desde antes do cadastro, como os bens.
+- "Conta para a liberdade financeira" só aparece em investimentos, previdência e fundos fechados.
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").

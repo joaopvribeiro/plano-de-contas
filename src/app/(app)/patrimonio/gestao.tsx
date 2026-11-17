@@ -8,8 +8,15 @@ import { Aviso, Botao, Caixa, Campo, Cartao, Seletor, Selo, cn } from "@/compone
 import { atualizarSaldoAtivo, excluirAtivo, excluirPassivo, salvarAtivo, salvarPassivo, type Resultado } from "@/app/actions/patrimonio";
 import { formatBRL, formatData, hojeISO } from "@/lib/format";
 import {
+  CAMPOS_DA_CATEGORIA,
   CATEGORIAS_ATIVO,
   DIAS_DESATUALIZADO,
+  METODOS_EQUITY,
+  ROTULO_CATEGORIA,
+  ROTULO_METODO,
+  TIPOS_BEM,
+  valorEquity,
+  type MetodoEquity,
   RISCOS,
   ROTULO_PASSIVO,
   TIPOS_PASSIVO,
@@ -144,7 +151,15 @@ function DataSaldo({ data, hoje }: { data: string; hoje: string }) {
 
 function LinhaAtivo({ a, hoje, onSaldo, onEditar }: { a: Ativo; hoje: string; onSaldo: () => void; onEditar: () => void }) {
   const c = a.categoria === "Consórcio" ? consorcio(a) : null;
-  const detalhes = [a.instituicao, a.produto, a.liquidez ? `liquidez ${a.liquidez}` : null].filter(Boolean).join(" · ");
+  const pct = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+  const detalhes =
+    a.categoria === "Equity" && a.equity_participacao && a.equity_metodo && a.equity_base !== null && a.equity_base !== undefined
+      ? `${pct(a.equity_participacao)} da empresa · ${
+          a.equity_metodo === "valuation"
+            ? `valuation de ${formatBRL(a.equity_base)}`
+            : `estimado: ${a.equity_multiplo?.toLocaleString("pt-BR")}× o ${a.equity_metodo === "lucro" ? "lucro" : "faturamento"} anual de ${formatBRL(a.equity_base)}`
+        }`
+      : [a.instituicao, a.previdencia_tipo, a.produto, a.liquidez ? `liquidez ${a.liquidez}` : null].filter(Boolean).join(" · ");
   return (
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 text-sm">
       <div className="min-w-0 flex-1 basis-56">
@@ -172,9 +187,11 @@ function LinhaAtivo({ a, hoje, onSaldo, onEditar }: { a: Ativo; hoje: string; on
         <DataSaldo data={a.data_saldo} hoje={hoje} />
       </div>
       <div className="flex gap-1">
-        <Botao variante="fantasma" onClick={onSaldo} aria-label={`Atualizar saldo de ${a.nome}`} title="Atualizar saldo">
-          <RefreshCw className="size-4" aria-hidden />
-        </Botao>
+        {a.categoria !== "Equity" && (
+          <Botao variante="fantasma" onClick={onSaldo} aria-label={`Atualizar saldo de ${a.nome}`} title="Atualizar saldo">
+            <RefreshCw className="size-4" aria-hidden />
+          </Botao>
+        )}
         <Botao variante="fantasma" onClick={onEditar} aria-label={`Editar ${a.nome}`} title="Editar">
           <Pencil className="size-4" aria-hidden />
         </Botao>
@@ -235,7 +252,24 @@ function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => voi
   const { res, pendente, enviar } = useEnvio(aoTerminar);
   const [categoria, setCategoria] = useState<CategoriaAtivo>(ativo?.categoria ?? "Investimentos");
   const [confirmarExclusao, setConfirmarExclusao] = useState(false);
+  const [metodo, setMetodo] = useState<MetodoEquity>(ativo?.equity_metodo ?? "valuation");
+  const [equity, setEquity] = useState({
+    pct: ativo?.equity_participacao?.toLocaleString("pt-BR") ?? "",
+    base: brl(ativo?.equity_base),
+    mult: ativo?.equity_multiplo?.toLocaleString("pt-BR") ?? "",
+  });
+  const campos = CAMPOS_DA_CATEGORIA[categoria];
   const ehConsorcio = categoria === "Consórcio";
+  const mesmo = ativo?.categoria === categoria;
+
+  // Valor estimado da participação, mostrado enquanto a pessoa digita.
+  const num = (t: string) => Number(t.replace(/\./g, "").replace(",", ".").replace("%", "").trim());
+  const estimado =
+    categoria === "Equity" && num(equity.pct) > 0 && num(equity.base) > 0 && (metodo === "valuation" || num(equity.mult) > 0)
+      ? valorEquity(metodo, num(equity.base), num(equity.mult) || null, num(equity.pct))
+      : null;
+
+  const rotuloValor = ehConsorcio ? "Valor da carta (R$)" : categoria === "Bem" ? "Valor de mercado (R$)" : categoria === "FGTS" ? "Saldo do FGTS (R$)" : "Saldo bruto (R$)";
 
   return (
     <form
@@ -251,7 +285,7 @@ function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => voi
             categoria,
             instituicao: s("instituicao"),
             produto: s("produto"),
-            valor: s("valor"),
+            valor: categoria === "Equity" ? "" : s("valor"),
             liquidez: s("liquidez"),
             risco: (s("risco") || null) as (typeof RISCOS)[number] | null,
             data_saldo: s("data_saldo"),
@@ -260,51 +294,159 @@ function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => voi
             consorcio_parcela_mensal: s("consorcio_parcela_mensal"),
             consorcio_contemplado: f.get("consorcio_contemplado") === "on",
             conta_liberdade: f.get("conta_liberdade") === "on",
+            previdencia_tipo: (s("previdencia_tipo") || null) as "PGBL" | "VGBL" | null,
+            equity_participacao: categoria === "Equity" ? equity.pct : "",
+            equity_metodo: categoria === "Equity" ? metodo : null,
+            equity_base: categoria === "Equity" ? equity.base : "",
+            equity_multiplo: categoria === "Equity" && metodo !== "valuation" ? equity.mult : "",
           }),
         );
       }}
     >
-      <Campo rotulo="Nome" id="nome" defaultValue={ativo?.nome} placeholder="Ex.: CDB liquidez diária" required />
-      <Erro res={res} campo="nome" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Seletor rotulo="Categoria" id="categoria" value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaAtivo)}>
-          {CATEGORIAS_ATIVO.map((c) => (
-            <option key={c} value={c}>
-              {c}
+      <Seletor rotulo="Categoria" id="categoria" value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaAtivo)}>
+        {CATEGORIAS_ATIVO.map((c) => (
+          <option key={c} value={c}>
+            {ROTULO_CATEGORIA[c]}
+          </option>
+        ))}
+      </Seletor>
+
+      {categoria !== "FGTS" && (
+        <>
+          <Campo
+            key={`nome-${categoria}`}
+            rotulo={categoria === "Equity" ? "Empresa" : "Nome"}
+            id="nome"
+            defaultValue={ativo?.nome}
+            placeholder={
+              categoria === "Bem" ? "Ex.: Apartamento Moema, VW Nivus 2024" : categoria === "Equity" ? "Ex.: Padaria Bom Dia Ltda." : ehConsorcio ? "Ex.: Consórcio imóvel" : "Ex.: CDB liquidez diária"
+            }
+            required
+          />
+          <Erro res={res} campo="nome" />
+        </>
+      )}
+
+      {(campos.instituicao || campos.produto) && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {campos.instituicao && (
+            <Campo rotulo={ehConsorcio ? "Administradora" : "Instituição"} id="instituicao" defaultValue={ativo?.instituicao ?? ""} placeholder={ehConsorcio ? "Ex.: Porto Seguro" : "Ex.: XP"} />
+          )}
+          {campos.produto && (
+            <Campo
+              rotulo={ehConsorcio ? "Bem do consórcio" : "Produto ou indexador"}
+              id="produto"
+              defaultValue={mesmo ? (ativo?.produto ?? "") : ""}
+              placeholder={ehConsorcio ? "Ex.: Imóvel, Automóvel" : "Ex.: CDB 100% CDI"}
+            />
+          )}
+        </div>
+      )}
+
+      {categoria === "Previdência" && (
+        <Seletor rotulo="Tipo do plano" id="previdencia_tipo" defaultValue={ativo?.previdencia_tipo ?? ""}>
+          <option value="">—</option>
+          <option value="PGBL">PGBL</option>
+          <option value="VGBL">VGBL</option>
+        </Seletor>
+      )}
+
+      {categoria === "Bem" && (
+        <Seletor rotulo="Tipo do bem" id="produto" defaultValue={mesmo ? (ativo?.produto ?? "") : ""}>
+          <option value="">—</option>
+          {TIPOS_BEM.map((t) => (
+            <option key={t} value={t}>
+              {t}
             </option>
           ))}
         </Seletor>
-        <Campo rotulo="Instituição" id="instituicao" defaultValue={ativo?.instituicao ?? ""} placeholder="Ex.: XP" />
-      </div>
-      <Campo rotulo="Produto ou indexador" id="produto" defaultValue={ativo?.produto ?? ""} placeholder="Ex.: CDB 100% CDI" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-4">
-          <Campo rotulo={ehConsorcio ? "Valor da carta (R$)" : "Saldo bruto (R$)"} id="valor" inputMode="decimal" defaultValue={brl(ativo?.valor)} required />
-          <Erro res={res} campo="valor" />
+      )}
+
+      {categoria === "Equity" ? (
+        <fieldset className="flex flex-col gap-4 rounded-lg border border-border p-3">
+          <legend className="px-1 text-sm font-medium">Valor da participação</legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-4">
+              <Campo rotulo="Participação da família (%)" id="equity_participacao" inputMode="decimal" value={equity.pct} onChange={(e) => setEquity({ ...equity, pct: e.target.value })} />
+              <Erro res={res} campo="equity_participacao" />
+            </div>
+            <Seletor rotulo="Como estimar" id="equity_metodo" value={metodo} onChange={(e) => setMetodo(e.target.value as MetodoEquity)}>
+              {METODOS_EQUITY.map((m) => (
+                <option key={m} value={m}>
+                  {ROTULO_METODO[m]}
+                </option>
+              ))}
+            </Seletor>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-4">
+              <Campo
+                rotulo={metodo === "valuation" ? "Valor da empresa (R$)" : metodo === "lucro" ? "Lucro anual (R$)" : "Faturamento anual (R$)"}
+                id="equity_base"
+                inputMode="decimal"
+                value={equity.base}
+                onChange={(e) => setEquity({ ...equity, base: e.target.value })}
+              />
+              <Erro res={res} campo="equity_base" />
+            </div>
+            {metodo !== "valuation" && (
+              <div className="flex flex-col gap-4">
+                <Campo
+                  rotulo={`Múltiplo (vezes o ${metodo === "lucro" ? "lucro" : "faturamento"})`}
+                  id="equity_multiplo"
+                  inputMode="decimal"
+                  value={equity.mult}
+                  placeholder={metodo === "lucro" ? "Ex.: 5" : "Ex.: 1,5"}
+                  onChange={(e) => setEquity({ ...equity, mult: e.target.value })}
+                />
+                <Erro res={res} campo="equity_multiplo" />
+              </div>
+            )}
+          </div>
+          <p className="text-sm" role="status">
+            Valor da participação: <strong className="num">{estimado === null ? "—" : formatBRL(estimado)}</strong>
+          </p>
+          {metodo !== "valuation" && <p className="text-xs text-muted">Estimativa por múltiplo, para o planejamento. Não substitui um valuation.</p>}
+        </fieldset>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <Campo rotulo={rotuloValor} id="valor" inputMode="decimal" defaultValue={brl(ativo?.valor)} dica={categoria === "Bem" ? "Tabela FIPE para veículos; valor de mercado para imóveis e terrenos." : undefined} required />
+            <Erro res={res} campo="valor" />
+          </div>
+          <div className="flex flex-col gap-4">
+            <Campo rotulo={categoria === "Bem" ? "Data da avaliação" : "Data do saldo"} id="data_saldo" type="date" defaultValue={ativo?.data_saldo ?? hojeISO()} max={hojeISO()} required />
+            <Erro res={res} campo="data_saldo" />
+          </div>
         </div>
+      )}
+      {categoria === "Equity" && (
         <div className="flex flex-col gap-4">
-          <Campo rotulo="Data do saldo" id="data_saldo" type="date" defaultValue={ativo?.data_saldo ?? hojeISO()} max={hojeISO()} required />
+          <Campo rotulo="Data da avaliação" id="data_saldo" type="date" defaultValue={ativo?.data_saldo ?? hojeISO()} max={hojeISO()} required />
           <Erro res={res} campo="data_saldo" />
         </div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Campo rotulo="Liquidez" id="liquidez" defaultValue={ativo?.liquidez ?? ""} placeholder="Ex.: D+0, D+30, No vencimento" />
-        <Seletor rotulo="Risco" id="risco" defaultValue={ativo?.risco ?? ""}>
-          <option value="">—</option>
-          {RISCOS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </Seletor>
-      </div>
-      {["Investimentos", "Previdência", "Fundo Fechado", "Reserva", "FGTS"].includes(categoria) && (
+      )}
+
+      {campos.liquidezRisco && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Campo rotulo="Liquidez" id="liquidez" defaultValue={mesmo ? (ativo?.liquidez ?? "") : ""} placeholder="Ex.: D+0, D+30, No vencimento" />
+          <Seletor rotulo="Risco" id="risco" defaultValue={mesmo ? (ativo?.risco ?? "") : ""}>
+            <option value="">—</option>
+            {RISCOS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </Seletor>
+        </div>
+      )}
+      {campos.liberdade && (
         <Caixa
           key={categoria}
           id="conta_liberdade"
           rotulo="Conta para a liberdade financeira"
           dica="Soma no objetivo de liberdade financeira (aba Objetivos)."
-          defaultChecked={ativo && ativo.categoria === categoria ? Boolean(ativo.conta_liberdade) : ["Investimentos", "Previdência", "Fundo Fechado"].includes(categoria)}
+          defaultChecked={mesmo ? Boolean(ativo?.conta_liberdade) : true}
         />
       )}
       {ehConsorcio && (

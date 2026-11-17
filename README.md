@@ -28,7 +28,7 @@ Cada etapa pode trazer migrações novas em `supabase/migrations`. Aplique antes
 npx supabase db push
 ```
 
-Sem a CLI: abra o **SQL Editor** e rode, em ordem, só os arquivos que ainda não rodou. Na Etapa 3 é o `20261116000100_etapa3_permissoes_regras_padrao.sql`; na Etapa 4, o `20261116000200_etapa4_importacao_ia.sql`; na Etapa 5, o `20261117000100_etapa5_patrimonio.sql`; na Etapa 7, o `20261117000200_etapa7_protecoes.sql`.
+Sem a CLI: abra o **SQL Editor** e rode, em ordem, só os arquivos que ainda não rodou. Na Etapa 3 é o `20261116000100_etapa3_permissoes_regras_padrao.sql`; na Etapa 4, o `20261116000200_etapa4_importacao_ia.sql`; na Etapa 5, o `20261117000100_etapa5_patrimonio.sql`; na Etapa 7, o `20261117000200_etapa7_protecoes.sql`; depois, o `20261117000300_patrimonio_equity_previdencia.sql`.
 
 ### Chave da IA (a partir da Etapa 4)
 

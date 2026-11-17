@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agrupar, consorcio, diasDesde, distribuir, evolucao, porInstituicao, resumir, type Ativo, type Passivo } from "./patrimonio";
+import { agrupar, consorcio, valorEquity, diasDesde, distribuir, evolucao, porInstituicao, resumir, type Ativo, type Passivo } from "./patrimonio";
 
 const ativo = (p: Partial<Ativo>): Ativo => ({
   id: Math.random().toString(36), nome: "x", categoria: "Investimentos", instituicao: "XP", produto: null, valor: 100,
@@ -30,6 +30,7 @@ describe("resumo", () => {
       instituicoesCarteira: 3, // "XP" e "xp " contam como uma
       fgts: 31800,
       bens: 805000,
+      empresas: 0,
       dividas: 32000,
       patrimonioLiquido: 1036600,
       cartas: 300000,
@@ -42,6 +43,16 @@ describe("resumo", () => {
     const c = { valor: 300000, consorcio_prazo_meses: 180, consorcio_parcelas_pagas: 120, consorcio_parcela_mensal: 2050, consorcio_contemplado: true };
     expect(consorcio(c)).toEqual({ pago: 246000, aPagar: 123000, direitoLiquido: 177000, progresso: 120 / 180 });
     expect(consorcio({ ...c, consorcio_parcelas_pagas: 10 }).direitoLiquido).toBe(0);
+  });
+});
+
+describe("equity", () => {
+  it("valor da participação por valuation ou por múltiplo, e entra no patrimônio líquido", () => {
+    expect(valorEquity("valuation", 2_000_000, null, 35)).toBe(700_000);
+    expect(valorEquity("lucro", 400_000, 6, 50)).toBe(1_200_000);
+    expect(valorEquity("faturamento", 1_000_000, 1.5, 100)).toBe(1_500_000);
+    const r = resumir([ativo({ categoria: "Equity", valor: 700_000 }), ativo({ categoria: "Investimentos", valor: 100 })], []);
+    expect(r).toMatchObject({ carteira: 100, empresas: 700_000, patrimonioLiquido: 700_100 });
   });
 });
 

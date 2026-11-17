@@ -2,14 +2,55 @@
  * Cálculos da aba Patrimônio. Puro e testado (patrimonio.test.ts).
  *
  * - Carteira investida = Reserva + Investimentos + Previdência + Fundo Fechado.
- * - Patrimônio líquido = carteira + FGTS + bens − dívidas.
+ * - Patrimônio líquido = carteira + FGTS + bens + participações em empresas − dívidas.
  * - Direitos futuros = soma das cartas de consórcio (informativo).
  * - Patrimônio com direitos = patrimônio líquido + direito líquido dos consórcios.
  *   Direito líquido: contemplado = carta − saldo a pagar; não contemplado = o que já foi pago.
  */
-export const CATEGORIAS_ATIVO = ["Reserva", "Investimentos", "Previdência", "Fundo Fechado", "FGTS", "Bem", "Consórcio"] as const;
+export const CATEGORIAS_ATIVO = ["Reserva", "Investimentos", "Previdência", "Fundo Fechado", "FGTS", "Bem", "Equity", "Consórcio"] as const;
 export type CategoriaAtivo = (typeof CATEGORIAS_ATIVO)[number];
 export const CATEGORIAS_CARTEIRA: CategoriaAtivo[] = ["Reserva", "Investimentos", "Previdência", "Fundo Fechado"];
+
+export const ROTULO_CATEGORIA: Record<CategoriaAtivo, string> = {
+  Reserva: "Reserva de emergência",
+  Investimentos: "Investimentos",
+  Previdência: "Previdência",
+  "Fundo Fechado": "Fundo fechado",
+  FGTS: "FGTS",
+  Bem: "Bem (imóvel, veículo, terreno)",
+  Equity: "Equity (participação em empresa)",
+  Consórcio: "Consórcio",
+};
+
+/** Campos de cada categoria no formulário. */
+export const CAMPOS_DA_CATEGORIA: Record<CategoriaAtivo, { instituicao: boolean; produto: boolean; liquidezRisco: boolean; liberdade: boolean }> = {
+  Reserva: { instituicao: true, produto: true, liquidezRisco: true, liberdade: false },
+  Investimentos: { instituicao: true, produto: true, liquidezRisco: true, liberdade: true },
+  Previdência: { instituicao: true, produto: true, liquidezRisco: true, liberdade: true },
+  "Fundo Fechado": { instituicao: true, produto: true, liquidezRisco: true, liberdade: true },
+  FGTS: { instituicao: false, produto: false, liquidezRisco: false, liberdade: false },
+  Bem: { instituicao: false, produto: false, liquidezRisco: false, liberdade: false },
+  Equity: { instituicao: false, produto: false, liquidezRisco: false, liberdade: false },
+  Consórcio: { instituicao: true, produto: true, liquidezRisco: false, liberdade: false },
+};
+
+export const TIPOS_BEM = ["Imóvel", "Terreno", "Veículo", "Outro"] as const;
+export const METODOS_EQUITY = ["valuation", "lucro", "faturamento"] as const;
+export type MetodoEquity = (typeof METODOS_EQUITY)[number];
+export const ROTULO_METODO: Record<MetodoEquity, string> = {
+  valuation: "Valuation da empresa",
+  lucro: "Múltiplo do lucro anual",
+  faturamento: "Múltiplo do faturamento anual",
+};
+
+/**
+ * Valor da participação: valuation × % ou (lucro/faturamento anual × múltiplo) × %.
+ * Sem valuation, a estimativa por múltiplo é uma referência para o planejamento, não um laudo.
+ */
+export function valorEquity(metodo: MetodoEquity, base: number, multiplo: number | null, participacaoPct: number): number {
+  const empresa = metodo === "valuation" ? base : base * (multiplo ?? 0);
+  return Math.round(empresa * (participacaoPct / 100) * 100) / 100;
+}
 
 export const RISCOS = ["baixo", "médio", "alto"] as const;
 export type Risco = (typeof RISCOS)[number];
@@ -31,7 +72,8 @@ export const GRUPOS: { categoria: CategoriaAtivo; titulo: string; subtitulo: str
   { categoria: "Previdência", titulo: "Previdência", subtitulo: "Aposentadoria · PGBL e VGBL" },
   { categoria: "Fundo Fechado", titulo: "Fundos fechados", subtitulo: "Resgate só no vencimento" },
   { categoria: "FGTS", titulo: "FGTS", subtitulo: "Saque-aniversário ou rescisão" },
-  { categoria: "Bem", titulo: "Bens", subtitulo: "Imóveis e veículos" },
+  { categoria: "Bem", titulo: "Bens", subtitulo: "Imóveis, terrenos e veículos · valor de mercado" },
+  { categoria: "Equity", titulo: "Participações em empresas", subtitulo: "Valor estimado da participação" },
   { categoria: "Consórcio", titulo: "Cartas de consórcio", subtitulo: "Direito futuro" },
 ];
 
@@ -49,6 +91,11 @@ export type Ativo = {
   origem: "manual" | "relatorio";
   /** Entra na conta da liberdade financeira (Objetivos). */
   conta_liberdade?: boolean | null;
+  previdencia_tipo?: "PGBL" | "VGBL" | null;
+  equity_participacao?: number | null;
+  equity_metodo?: MetodoEquity | null;
+  equity_base?: number | null;
+  equity_multiplo?: number | null;
   consorcio_prazo_meses: number | null;
   consorcio_parcelas_pagas: number | null;
   consorcio_parcela_mensal: number | null;
@@ -89,6 +136,7 @@ export type Resumo = {
   instituicoesCarteira: number;
   fgts: number;
   bens: number;
+  empresas: number;
   dividas: number;
   patrimonioLiquido: number;
   cartas: number;
@@ -102,9 +150,10 @@ export function resumir(ativos: Ativo[], passivos: Passivo[]): Resumo {
   const cats = vis.filter((a) => a.categoria === "Consórcio");
   const fgts = soma(vis.filter((a) => a.categoria === "FGTS").map((a) => a.valor));
   const bens = soma(vis.filter((a) => a.categoria === "Bem").map((a) => a.valor));
+  const empresas = soma(vis.filter((a) => a.categoria === "Equity").map((a) => a.valor));
   const dividas = soma(passivos.map((p) => p.saldo_devedor));
   const totalCarteira = soma(carteira.map((a) => a.valor));
-  const patrimonioLiquido = r2(totalCarteira + fgts + bens - dividas);
+  const patrimonioLiquido = r2(totalCarteira + fgts + bens + empresas - dividas);
   const direitoLiquido = soma(cats.map((a) => consorcio(a).direitoLiquido));
   return {
     carteira: totalCarteira,
@@ -112,6 +161,7 @@ export function resumir(ativos: Ativo[], passivos: Passivo[]): Resumo {
     instituicoesCarteira: new Set(carteira.map((a) => (a.instituicao ?? "").trim().toUpperCase()).filter(Boolean)).size,
     fgts,
     bens,
+    empresas,
     dividas,
     patrimonioLiquido,
     cartas: soma(cats.map((a) => a.valor)),
@@ -201,9 +251,10 @@ export function evolucao(
     for (const [id, l] of ha) {
       const cat = categoria.get(id);
       if (!cat || cat === "Consórcio") continue;
-      const v = ate(l, dia, cat === "Bem");
+      const fixo = cat === "Bem" || cat === "Equity";
+      const v = ate(l, dia, fixo);
       if (v === null) continue;
-      if (cat !== "Bem") algum = true;
+      if (!fixo) algum = true;
       if (CATEGORIAS_CARTEIRA.includes(cat)) carteira += v;
       liquido += v;
     }
