@@ -76,6 +76,7 @@ const esquemaAtivo = z
     consorcio_parcelas_pagas: inteiro.optional(),
     consorcio_parcela_mensal: dinheiro("a parcela", false).optional(),
     consorcio_contemplado: z.boolean().optional(),
+    conta_liberdade: z.boolean().optional(),
   })
   .superRefine((a, ctx) => {
     if (a.categoria !== "Consórcio") return;

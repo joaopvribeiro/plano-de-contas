@@ -111,6 +111,15 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Cota de IA**: relatórios e extratos dividem as 20 leituras mensais.
 - **Confirmação numa transação só** (`confirmar_relatorio`), com a RLS valendo; valores vêm da leitura guardada no servidor. O PDF é apagado ao confirmar ou descartar.
 
+## Etapa 6
+
+- **Liberdade financeira** soma os ativos marcados "Conta para a liberdade financeira" (padrão: Investimentos, Previdência e Fundo Fechado; editável em cada ativo). Mostra o saldo de hoje no prazo só com o retorno real e o aporte mensal constante (fim de cada mês) que fecha a meta. Tudo em reais de hoje.
+- **Reserva**: meta = N meses × despesa básica prevista média do horizonte; "cobre X meses" com uma casa decimal, arredondando para baixo.
+- **Projetos**: quanto guardar por mês = o que falta ÷ meses do próximo mês até o mês do prazo. Prazo vencido mostra o que falta; meta atingida, selo verde. "Guardado em" é só uma referência ao ativo; o valor guardado é informado na meta.
+- **Prever no orçamento** (só consultor): cria o aporte mensal como previsto da classe Sonhos (primeira categoria da classe), do próximo mês até o prazo, dentro do horizonte, sem repetir meses já previstos.
+- **Premissas** (meta, retorno real, prazo, meses de reserva): só o consultor edita, como já era no banco.
+- Sem migração nesta etapa.
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").

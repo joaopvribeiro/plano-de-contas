@@ -259,6 +259,7 @@ function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => voi
             consorcio_parcelas_pagas: s("consorcio_parcelas_pagas"),
             consorcio_parcela_mensal: s("consorcio_parcela_mensal"),
             consorcio_contemplado: f.get("consorcio_contemplado") === "on",
+            conta_liberdade: f.get("conta_liberdade") === "on",
           }),
         );
       }}
@@ -297,6 +298,15 @@ function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => voi
           ))}
         </Seletor>
       </div>
+      {["Investimentos", "Previdência", "Fundo Fechado", "Reserva", "FGTS"].includes(categoria) && (
+        <Caixa
+          key={categoria}
+          id="conta_liberdade"
+          rotulo="Conta para a liberdade financeira"
+          dica="Soma no objetivo de liberdade financeira (aba Objetivos)."
+          defaultChecked={ativo && ativo.categoria === categoria ? Boolean(ativo.conta_liberdade) : ["Investimentos", "Previdência", "Fundo Fechado"].includes(categoria)}
+        />
+      )}
       {ehConsorcio && (
         <fieldset className="flex flex-col gap-4 rounded-lg border border-border p-3">
           <legend className="px-1 text-sm font-medium">Consórcio</legend>
