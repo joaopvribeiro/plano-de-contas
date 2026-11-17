@@ -4,7 +4,9 @@ import { Cartao, cn } from "@/components/ui";
 import { TituloPagina } from "@/components/em-construcao";
 import { obterFamiliaAtiva } from "@/lib/sessao";
 import { carregarPatrimonio } from "@/lib/patrimonio-consultas";
-import { agrupar, distribuir, porInstituicao, resumir } from "@/lib/patrimonio";
+import { agrupar, distribuir, distribuirPorCategoria, porInstituicao, resumir, totalReserva } from "@/lib/patrimonio";
+import { carregarDashboard } from "@/lib/dashboard/consultas";
+import { metaDaReserva } from "@/lib/dfc";
 import { formatBRL, hojeISO } from "@/lib/format";
 import { GraficoEvolucao } from "./grafico";
 import { Balanco, BotoesNovo } from "./gestao";
@@ -53,7 +55,8 @@ function Distribuicao({ titulo, fatias }: { titulo: string; fatias: { rotulo: st
 
 export default async function PaginaPatrimonio() {
   const { familia } = await obterFamiliaAtiva();
-  const d = await carregarPatrimonio(familia.id);
+  const [d, dash] = await Promise.all([carregarPatrimonio(familia.id), carregarDashboard(familia.id)]);
+  const reserva = { meta: metaDaReserva(dash.dfc, dash.reservaMeses), total: totalReserva(d.ativos) };
   const r = resumir(d.ativos, d.passivos);
   const grupos = agrupar(d.ativos);
   const hoje = hojeISO();
@@ -69,7 +72,7 @@ export default async function PaginaPatrimonio() {
           >
             <FileUp className="size-4" aria-hidden /> Importar relatório
           </Link>
-          <BotoesNovo />
+          <BotoesNovo reserva={reserva} />
         </div>
       </div>
 
@@ -96,7 +99,7 @@ export default async function PaginaPatrimonio() {
       </section>
 
       <section className="mb-5 grid gap-3 lg:grid-cols-2">
-        <Distribuicao titulo="Carteira por categoria" fatias={distribuir(d.ativos, (a) => a.categoria)} />
+        <Distribuicao titulo="Carteira por categoria" fatias={distribuirPorCategoria(d.ativos)} />
         <Distribuicao titulo="Carteira por instituição" fatias={distribuir(d.ativos, porInstituicao)} />
       </section>
 
@@ -110,7 +113,7 @@ export default async function PaginaPatrimonio() {
         )}
       </Cartao>
 
-      <Balanco grupos={grupos} passivos={d.passivos} hoje={hoje} totalDividas={r.dividas} />
+      <Balanco grupos={grupos} passivos={d.passivos} hoje={hoje} totalDividas={r.dividas} reserva={reserva} />
     </>
   );
 }

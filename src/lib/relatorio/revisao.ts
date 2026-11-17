@@ -15,7 +15,7 @@ import { normalizarDescricao } from "@/lib/lancamentos/regras-de-negocio";
 import type { Ativo, CategoriaAtivo, Risco } from "@/lib/patrimonio";
 import type { Estrategia, Posicao, RelatorioLido } from "./esquema";
 
-export type AtivoExistente = Pick<Ativo, "id" | "nome" | "categoria" | "instituicao" | "valor" | "origem"> & { chave_relatorio: string | null };
+export type AtivoExistente = Pick<Ativo, "id" | "nome" | "categoria" | "instituicao" | "valor" | "origem"> & { chave_relatorio: string | null; reserva_valor?: number | null };
 
 export type LinhaRelatorio = {
   idx: number;
@@ -118,8 +118,17 @@ export function montarRevisaoRelatorio(
   });
 
   // Reserva até a meta: conta o que já é Reserva fora deste relatório e nas posições existentes.
+  const porId = new Map(existentes.map((a) => [a.id, a]));
   let reservaAtual =
-    reserva.foraDoRelatorio + linhas.filter((l) => l.ativo_id && l.categoria === "Reserva").reduce((s, l) => s + l.valor, 0);
+    reserva.foraDoRelatorio +
+    linhas
+      .filter((l) => l.ativo_id)
+      .reduce((s, l) => {
+        if (l.categoria === "Reserva") return s + l.valor;
+        // Investimento com parte separada como reserva: a parte continua valendo (até o saldo novo).
+        const parte = porId.get(l.ativo_id!)?.reserva_valor ?? 0;
+        return s + (l.categoria === "Investimentos" ? Math.min(parte, l.valor) : 0);
+      }, 0);
   const candidatas = linhas
     .filter((l) => !l.ativo_id && (l.estrategia === "caixa" || l.estrategia === "pos_fixado"))
     .map((l) => ({ l, dias: rel.posicoes[l.idx].liquidez_dias ?? (l.estrategia === "caixa" ? 0 : null) }))

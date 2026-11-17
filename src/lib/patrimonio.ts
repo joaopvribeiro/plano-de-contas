@@ -96,6 +96,8 @@ export type Ativo = {
   equity_metodo?: MetodoEquity | null;
   equity_base?: number | null;
   equity_multiplo?: number | null;
+  /** Parte deste investimento que conta como reserva de emergência. */
+  reserva_valor?: number | null;
   consorcio_prazo_meses: number | null;
   consorcio_parcelas_pagas: number | null;
   consorcio_parcela_mensal: number | null;
@@ -116,6 +118,17 @@ export type Passivo = {
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const soma = (xs: number[]) => r2(xs.reduce((s, x) => s + x, 0));
+
+/** Quanto do ativo é reserva: o saldo todo (categoria Reserva) ou a parte separada de um investimento. */
+export function parteReserva(a: Pick<Ativo, "categoria" | "valor"> & { reserva_valor?: number | null }): number {
+  if (a.categoria === "Reserva") return a.valor;
+  if (a.categoria === "Investimentos" && a.reserva_valor) return Math.min(a.reserva_valor, Math.max(a.valor, 0));
+  return 0;
+}
+
+export function totalReserva(ativos: (Pick<Ativo, "categoria" | "valor"> & { reserva_valor?: number | null })[]): number {
+  return Math.round(ativos.reduce((s, a) => s + parteReserva(a), 0) * 100) / 100;
+}
 
 /** Ativo com saldo zero (posição resgatada) fica fora do balanço e dos totais. */
 export const ativoVisivel = (a: Pick<Ativo, "valor" | "categoria">) => a.valor > 0 || a.categoria === "Consórcio";
@@ -188,11 +201,41 @@ export function distribuir(ativos: Ativo[], chave: (a: Ativo) => string, max = 6
 
 export const porInstituicao = (a: Ativo) => a.instituicao?.trim() || "Sem instituição";
 
+/** Carteira por categoria, com a parte de reserva dos investimentos contada em Reserva. */
+export function distribuirPorCategoria(ativos: Ativo[]): Fatia[] {
+  const partes: Ativo[] = [];
+  for (const a of ativos) {
+    const parte = a.categoria === "Investimentos" ? parteReserva(a) : 0;
+    if (parte > 0) {
+      partes.push({ ...a, categoria: "Reserva", valor: parte });
+      if (a.valor - parte > 0) partes.push({ ...a, valor: a.valor - parte });
+    } else partes.push(a);
+  }
+  return distribuir(partes, (a) => a.categoria);
+}
+
 /** Grupos do balanço com subtotal; ativos do maior para o menor. Grupos vazios ficam de fora. */
+export type ItemBalanco = Ativo & {
+  /** Valor mostrado neste grupo (o saldo, ou a parte que cabe ao grupo). */
+  exibido: number;
+  /** "parte-reserva": linha da reserva que é parte de um investimento; "com-reserva": investimento que tem parte na reserva. */
+  papel?: "parte-reserva" | "com-reserva";
+};
+
 export function agrupar(ativos: Ativo[]) {
   return GRUPOS.map((g) => {
-    const itens = ativos.filter((a) => a.categoria === g.categoria && ativoVisivel(a)).sort((x, y) => y.valor - x.valor);
-    return { ...g, itens, subtotal: soma(itens.map((a) => a.valor)) };
+    const itens: ItemBalanco[] = [];
+    for (const a of ativos) {
+      if (!ativoVisivel(a)) continue;
+      const parte = a.categoria === "Investimentos" ? parteReserva(a) : 0;
+      if (a.categoria === g.categoria) {
+        if (parte > 0) {
+          if (a.valor - parte > 0) itens.push({ ...a, exibido: r2(a.valor - parte), papel: "com-reserva" });
+        } else itens.push({ ...a, exibido: a.valor });
+      } else if (g.categoria === "Reserva" && parte > 0) itens.push({ ...a, exibido: parte, papel: "parte-reserva" });
+    }
+    itens.sort((x, y) => y.exibido - x.exibido);
+    return { ...g, itens, subtotal: soma(itens.map((a) => a.exibido)) };
   }).filter((g) => g.itens.length > 0);
 }
 

@@ -141,6 +141,13 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Sem duplicar**: mês de destino que já tem previsto com a mesma descrição e conta é pulado. Parcelas ficam de fora (têm o próprio controle).
 - A importação do previsto termina com o atalho "Projetar para os próximos meses".
 
+## Reserva parcial (17/11, pedido do João)
+
+- Um investimento pode ter uma **parte na reserva de emergência** (`ativos.reserva_valor`, valor fixo). Ex.: R$ 98.880 de um fundo de R$ 192.545 contam como reserva; o resto segue em Investimentos.
+- O formulário mostra a meta, quanto já há nas outras posições e quanto falta, com o botão "Completar a meta".
+- No balanço, o fundo aparece nos dois grupos: em Reserva, a parte; em Investimentos, o restante, com o saldo total na linha. Carteira e patrimônio não mudam (não há dupla contagem).
+- A parte entra no saldo da reserva do Dashboard, de Objetivos, da distribuição por categoria e da sugestão de reserva dos relatórios. Se o saldo cair abaixo da parte, conta só o saldo. Vale só para a categoria Investimentos.
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").

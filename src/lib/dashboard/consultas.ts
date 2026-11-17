@@ -1,4 +1,5 @@
 import "server-only";
+import { totalReserva, type CategoriaAtivo } from "@/lib/patrimonio";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { calcularDFC, type ClasseDespesa, type LancamentoDFC } from "@/lib/dfc";
 import { mesesDoHorizonte } from "@/lib/format";
@@ -17,7 +18,7 @@ export async function carregarDashboard(familiaId: string) {
     supabase.rpc("resumo_dfc", { p_familia: familiaId, p_de: meses[0], p_ate: meses[meses.length - 1] }),
     supabase.from("metas_classe").select("classe, percentual_max_receita").eq("familia_id", familiaId),
     supabase.from("objetivos_config").select("reserva_meses").eq("familia_id", familiaId).maybeSingle(),
-    supabase.from("ativos").select("valor").eq("familia_id", familiaId).eq("categoria", "Reserva"),
+    supabase.from("ativos").select("categoria, valor, reserva_valor").eq("familia_id", familiaId).in("categoria", ["Reserva", "Investimentos"]),
   ]);
   if (resumo.error) throw new Error("Falha ao calcular a DFC.");
 
@@ -41,7 +42,8 @@ export async function carregarDashboard(familiaId: string) {
     dfc,
     metas: metasPorClasse,
     reservaMeses: objetivos.data?.reserva_meses ?? 6,
-    saldoReserva: (reserva.data ?? []).reduce((s, a) => s + Number(a.valor), 0),
+    // Inclui a parte de investimentos separada como reserva.
+    saldoReserva: totalReserva((reserva.data ?? []).map((a) => ({ categoria: a.categoria as CategoriaAtivo, valor: Number(a.valor), reserva_valor: a.reserva_valor === null ? null : Number(a.reserva_valor) }))),
     vazio: lancamentos.length === 0,
   };
 }

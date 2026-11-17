@@ -78,6 +78,7 @@ const esquemaAtivo = z
     consorcio_contemplado: z.boolean().optional(),
     conta_liberdade: z.boolean().optional(),
     previdencia_tipo: z.enum(["PGBL", "VGBL"]).nullable().optional(),
+    reserva_valor: dinheiro("a parte da reserva", false).optional(),
     equity_participacao: z
       .union([z.string(), z.number()])
       .transform((v, ctx) => {
@@ -142,6 +143,7 @@ export async function salvarAtivo(entrada: z.input<typeof esquemaAtivo>): Promis
     risco: campos.liquidezRisco ? (a.risco ?? null) : null,
     conta_liberdade: campos.liberdade ? Boolean(a.conta_liberdade) : false,
     previdencia_tipo: a.categoria === "Previdência" ? (a.previdencia_tipo ?? null) : null,
+    reserva_valor: a.categoria === "Investimentos" && a.reserva_valor ? a.reserva_valor : null,
     equity_participacao: equity ? a.equity_participacao : null,
     equity_metodo: equity ? a.equity_metodo : null,
     equity_base: equity ? a.equity_base : null,

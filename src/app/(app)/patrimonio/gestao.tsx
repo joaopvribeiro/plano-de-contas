@@ -16,6 +16,8 @@ import {
   ROTULO_METODO,
   TIPOS_BEM,
   valorEquity,
+  parteReserva,
+  type ItemBalanco,
   type MetodoEquity,
   RISCOS,
   ROTULO_PASSIVO,
@@ -33,7 +35,9 @@ const brl = (v: number | null | undefined) => (v === null || v === undefined ? "
 // Botões "Adicionar"
 // ---------------------------------------------------------------------------
 
-export function BotoesNovo() {
+type InfoReserva = { meta: number; total: number };
+
+export function BotoesNovo({ reserva }: { reserva: InfoReserva }) {
   const [aberto, setAberto] = useState<"ativo" | "passivo" | null>(null);
   return (
     <>
@@ -44,7 +48,7 @@ export function BotoesNovo() {
         <Plus className="size-4" aria-hidden /> Adicionar ativo
       </Botao>
       <Dialogo aberto={aberto === "ativo"} aoFechar={() => setAberto(null)} titulo="Adicionar ativo">
-        <FormAtivo aoTerminar={() => setAberto(null)} />
+        <FormAtivo reserva={reserva} aoTerminar={() => setAberto(null)} />
       </Dialogo>
       <Dialogo aberto={aberto === "passivo"} aoFechar={() => setAberto(null)} titulo="Adicionar dívida">
         <FormPassivo aoTerminar={() => setAberto(null)} />
@@ -57,10 +61,22 @@ export function BotoesNovo() {
 // Balanço
 // ---------------------------------------------------------------------------
 
-type Grupo = { categoria: CategoriaAtivo; titulo: string; subtitulo: string; itens: Ativo[]; subtotal: number };
+type Grupo = { categoria: CategoriaAtivo; titulo: string; subtitulo: string; itens: ItemBalanco[]; subtotal: number };
 type Acao = { tipo: "saldo" | "editar"; ativo: Ativo } | { tipo: "passivo"; passivo: Passivo } | null;
 
-export function Balanco({ grupos, passivos, hoje, totalDividas }: { grupos: Grupo[]; passivos: Passivo[]; hoje: string; totalDividas: number }) {
+export function Balanco({
+  grupos,
+  passivos,
+  hoje,
+  totalDividas,
+  reserva,
+}: {
+  grupos: Grupo[];
+  passivos: Passivo[];
+  hoje: string;
+  totalDividas: number;
+  reserva: InfoReserva;
+}) {
   const [acao, setAcao] = useState<Acao>(null);
   const fechar = () => setAcao(null);
 
@@ -85,7 +101,7 @@ export function Balanco({ grupos, passivos, hoje, totalDividas }: { grupos: Grup
           </div>
           <ul className="divide-y divide-border">
             {g.itens.map((a) => (
-              <LinhaAtivo key={a.id} a={a} hoje={hoje} onSaldo={() => setAcao({ tipo: "saldo", ativo: a })} onEditar={() => setAcao({ tipo: "editar", ativo: a })} />
+              <LinhaAtivo key={`${a.id}-${a.papel ?? ""}`} a={a} hoje={hoje} onSaldo={() => setAcao({ tipo: "saldo", ativo: a })} onEditar={() => setAcao({ tipo: "editar", ativo: a })} />
             ))}
           </ul>
         </Cartao>
@@ -130,7 +146,7 @@ export function Balanco({ grupos, passivos, hoje, totalDividas }: { grupos: Grup
         {acao?.tipo === "saldo" && <FormSaldo ativo={acao.ativo} aoTerminar={fechar} />}
       </Dialogo>
       <Dialogo aberto={acao?.tipo === "editar"} aoFechar={fechar} titulo="Editar ativo">
-        {acao?.tipo === "editar" && <FormAtivo ativo={acao.ativo} aoTerminar={fechar} />}
+        {acao?.tipo === "editar" && <FormAtivo ativo={acao.ativo} reserva={reserva} aoTerminar={fechar} />}
       </Dialogo>
       <Dialogo aberto={acao?.tipo === "passivo"} aoFechar={fechar} titulo="Editar dívida">
         {acao?.tipo === "passivo" && <FormPassivo passivo={acao.passivo} aoTerminar={fechar} />}
@@ -149,7 +165,7 @@ function DataSaldo({ data, hoje }: { data: string; hoje: string }) {
   );
 }
 
-function LinhaAtivo({ a, hoje, onSaldo, onEditar }: { a: Ativo; hoje: string; onSaldo: () => void; onEditar: () => void }) {
+function LinhaAtivo({ a, hoje, onSaldo, onEditar }: { a: ItemBalanco; hoje: string; onSaldo: () => void; onEditar: () => void }) {
   const c = a.categoria === "Consórcio" ? consorcio(a) : null;
   const pct = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
   const detalhes =
@@ -169,6 +185,12 @@ function LinhaAtivo({ a, hoje, onSaldo, onEditar }: { a: Ativo; hoje: string; on
           {a.origem === "relatorio" && <span className="text-xs font-normal text-muted">via relatório</span>}
         </p>
         {detalhes && <p className="text-xs text-muted">{detalhes}</p>}
+        {a.papel === "parte-reserva" && <p className="text-xs text-muted">Parte reservada de um investimento · saldo total {formatBRL(a.valor)}</p>}
+        {a.papel === "com-reserva" && (
+          <p className="text-xs text-muted">
+            Saldo total {formatBRL(a.valor)}, dos quais {formatBRL(a.valor - a.exibido)} contam como reserva de emergência
+          </p>
+        )}
         {c && (
           <div className="mt-1.5 max-w-md">
             <div className="h-1.5 rounded-full bg-surface-2" aria-hidden>
@@ -182,8 +204,8 @@ function LinhaAtivo({ a, hoje, onSaldo, onEditar }: { a: Ativo; hoje: string; on
         )}
       </div>
       <div className="flex-1 sm:flex-none sm:text-right">
-        <p className="num font-semibold">{formatBRL(a.valor)}</p>
-        {a.valor_liquido !== null && <p className="num text-xs text-muted">líquido {formatBRL(a.valor_liquido)}</p>}
+        <p className="num font-semibold">{formatBRL(a.exibido)}</p>
+        {a.valor_liquido !== null && !a.papel && <p className="num text-xs text-muted">líquido {formatBRL(a.valor_liquido)}</p>}
         <DataSaldo data={a.data_saldo} hoje={hoje} />
       </div>
       <div className="flex gap-1">
@@ -248,7 +270,7 @@ function Erro({ res, campo }: { res: Resultado; campo: string }) {
   return res.erros?.[campo] ? <p className="-mt-2 text-xs text-negative">{res.erros[campo]}</p> : null;
 }
 
-function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => void }) {
+function FormAtivo({ ativo, reserva, aoTerminar }: { ativo?: Ativo; reserva: InfoReserva; aoTerminar: () => void }) {
   const { res, pendente, enviar } = useEnvio(aoTerminar);
   const [categoria, setCategoria] = useState<CategoriaAtivo>(ativo?.categoria ?? "Investimentos");
   const [confirmarExclusao, setConfirmarExclusao] = useState(false);
@@ -259,6 +281,11 @@ function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => voi
     mult: ativo?.equity_multiplo?.toLocaleString("pt-BR") ?? "",
   });
   const campos = CAMPOS_DA_CATEGORIA[categoria];
+  const [valor, setValor] = useState(brl(ativo?.valor));
+  const [parte, setParte] = useState(brl(ativo?.reserva_valor ?? null));
+  // Reserva das outras posições: o total menos o que este ativo já conta.
+  const outras = reserva.total - (ativo ? parteReserva(ativo) : 0);
+  const falta = Math.max(reserva.meta - outras, 0);
   const ehConsorcio = categoria === "Consórcio";
   const mesmo = ativo?.categoria === categoria;
 
@@ -295,6 +322,7 @@ function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => voi
             consorcio_contemplado: f.get("consorcio_contemplado") === "on",
             conta_liberdade: f.get("conta_liberdade") === "on",
             previdencia_tipo: (s("previdencia_tipo") || null) as "PGBL" | "VGBL" | null,
+            reserva_valor: categoria === "Investimentos" ? parte : "",
             equity_participacao: categoria === "Equity" ? equity.pct : "",
             equity_metodo: categoria === "Equity" ? metodo : null,
             equity_base: categoria === "Equity" ? equity.base : "",
@@ -411,7 +439,7 @@ function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => voi
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-4">
-            <Campo rotulo={rotuloValor} id="valor" inputMode="decimal" defaultValue={brl(ativo?.valor)} dica={categoria === "Bem" ? "Tabela FIPE para veículos; valor de mercado para imóveis e terrenos." : undefined} required />
+            <Campo rotulo={rotuloValor} id="valor" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} dica={categoria === "Bem" ? "Tabela FIPE para veículos; valor de mercado para imóveis e terrenos." : undefined} required />
             <Erro res={res} campo="valor" />
           </div>
           <div className="flex flex-col gap-4">
@@ -439,6 +467,33 @@ function FormAtivo({ ativo, aoTerminar }: { ativo?: Ativo; aoTerminar: () => voi
             ))}
           </Seletor>
         </div>
+      )}
+      {categoria === "Investimentos" && (
+        <fieldset className="flex flex-col gap-2 rounded-lg border border-border p-3">
+          <legend className="px-1 text-sm font-medium">Parte na reserva de emergência</legend>
+          <p className="text-xs text-muted">
+            Use quando só uma parte deste investimento é reserva. Meta da reserva: {formatBRL(reserva.meta)} · nas outras posições:{" "}
+            {formatBRL(outras)} · falta {formatBRL(falta)}.
+          </p>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="min-w-40 flex-1">
+              <Campo rotulo="Valor na reserva (R$)" id="reserva_valor" inputMode="decimal" value={parte} onChange={(e) => setParte(e.target.value)} placeholder="Vazio = nada" />
+            </div>
+            <Botao
+              type="button"
+              variante="secundario"
+              disabled={falta === 0}
+              onClick={() => {
+                const saldo = Number(valor.replace(/\./g, "").replace(",", ".")) || 0;
+                setParte(brl(Math.min(falta, saldo || falta)));
+              }}
+            >
+              Completar a meta
+            </Botao>
+          </div>
+          <Erro res={res} campo="reserva_valor" />
+          <p className="text-xs text-muted">O valor fica fixo até você mudar; se o saldo cair abaixo dele, conta só o saldo.</p>
+        </fieldset>
       )}
       {campos.liberdade && (
         <Caixa
