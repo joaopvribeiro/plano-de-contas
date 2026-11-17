@@ -17,7 +17,12 @@ export function SubnavLancamentos({ consultor }: { consultor: boolean }) {
   return (
     <nav aria-label="Lançamentos" className="-mx-4 mb-5 overflow-x-auto px-4">
       <ul className="flex gap-1 border-b border-border">
-        {[...ITENS, ...(consultor ? [{ href: "/lancamentos/importar-previsto", rotulo: "Importar previsto" }] : [])].map((i) => {
+        {[...ITENS, ...(consultor
+            ? [
+                { href: "/lancamentos/importar-previsto", rotulo: "Importar previsto" },
+                { href: "/lancamentos/projetar", rotulo: "Projetar orçamento" },
+              ]
+            : [])].map((i) => {
           const atual = i.href === "/lancamentos/importar" ? caminho.startsWith(i.href) && !caminho.startsWith("/lancamentos/importar-previsto") : caminho === i.href;
           return (
             <li key={i.href}>

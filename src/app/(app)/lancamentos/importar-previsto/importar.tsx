@@ -86,6 +86,10 @@ export function ImportarPrevisto({
         <Aviso tom="positivo">
           {resultado.importadas} linhas importadas
           {resultado.removidas ? `; ${resultado.removidas} previstas antigas substituídas` : ""}.{" "}
+          <Link href="/lancamentos/projetar" className="font-semibold underline">
+            Projetar para os próximos meses
+          </Link>{" "}
+          ·{" "}
           <Link href="/dashboard" className="font-semibold underline">
             Ver no Dashboard
           </Link>
