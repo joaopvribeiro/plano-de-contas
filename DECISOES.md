@@ -120,6 +120,14 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Premissas** (meta, retorno real, prazo, meses de reserva): só o consultor edita, como já era no banco.
 - Sem migração nesta etapa.
 
+## Etapa 7
+
+- **Prêmio** guardado com a periodicidade (decisão 14); o mensal é calculado. Prêmio único não entra nos "prêmios mensais" nem no orçamento.
+- **Cartões**: prêmios mensais das apólices vigentes (sem fim ou fim a partir de hoje); "lidas pela IA" em âmbar quando falta alguma; renovações com fim nos próximos 60 dias.
+- **Leitura**: PDF ou até 3 fotos; a IA preenche tipo, seguradora, produto, segurado (só o nome, nunca documentos), prêmio, periodicidade, vigência, destaques do tipo, carências e exclusões (até 8 cada), como acionar e resumo em linguagem simples. Tudo passa por uma tela de revisão editável antes de salvar. Cota própria: 5 leituras de apólice por mês.
+- **Arquivo original da apólice fica guardado** (diferente de extratos e relatórios), aberto por link temporário de 5 minutos; sai junto quando a apólice é excluída. O texto da autorização de IA foi ajustado para dizer isso.
+- **Incluir prêmio no orçamento** (consultor): previsto mensal, classe Despesa básica, marcado como assinatura, categoria pelo tipo (vida e saúde → Saúde, auto → Transporte, residencial → Moradia, outro → Outros), do mês atual (ou início da vigência) até o fim do horizonte ou da vigência, sem repetir meses.
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").

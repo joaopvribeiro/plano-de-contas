@@ -4,7 +4,7 @@ Plataforma de planejamento financeiro familiar da Resolutto: Dashboard & DFC, La
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Auth, Postgres com RLS, Storage) · Zod · Vitest · Playwright · Vercel.
 
-## Estado atual: Etapas 1 a 6 concluídas
+## Estado atual: Etapas 1 a 7 concluídas
 
 - Esquema completo do banco (23 tabelas), RLS em todas, Storage privado por família.
 - Papéis: membro, consultor e consultor admin. Convite por e-mail.
@@ -17,6 +17,7 @@ Plataforma de planejamento financeiro familiar da Resolutto: Dashboard & DFC, La
 - **Importação de extratos e faturas (Etapa 4):** PDF e fotos lidos pela IA (Claude, da Anthropic), OFX e CSV lidos sem IA. Revisão antes de gravar: regras da família, sugestões da IA, mês da fatura, estornos, possíveis duplicadas, conferência com o total da fatura, parcelas ligadas às previstas e parcelas futuras. Autorização de IA por família e limite mensal de leituras. O arquivo original é apagado ao confirmar ou descartar.
 - **Patrimônio (Etapa 5):** carteira investida, patrimônio líquido, direitos futuros e patrimônio com direitos; distribuição por categoria e instituição; evolução mensal; balanço por grupo com saldo desatualizado em destaque; ativos, dívidas e consórcios. Leitura de relatórios de investimento (XP, BTG e outros) com IA, conferida contra o patrimônio bruto, sugerindo a reserva até a meta e atualizando os mesmos ativos mês a mês.
 - **Objetivos (Etapa 6):** liberdade financeira (saldo de hoje no prazo e aporte mensal necessário, em reais de hoje), reserva de emergência (quantos meses cobre), consórcios e projetos com quanto guardar por mês. O consultor edita as premissas e pode prever o aporte de um projeto no orçamento.
+- **Proteções (Etapa 7):** prêmios mensais, apólices lidas pela IA e renovações em 60 dias; cards por tipo com os destaques; detalhe com resumo, carências, exclusões, como acionar e o arquivo original; leitura de apólice (PDF ou até 3 fotos) com revisão; cadastro à mão; "Incluir prêmio no orçamento" para o consultor.
 - Testes de unidade, de banco (isolamento entre famílias e permissões) e de ponta a ponta.
 
 ## Atualizar um Supabase que já está no ar
@@ -27,7 +28,7 @@ Cada etapa pode trazer migrações novas em `supabase/migrations`. Aplique antes
 npx supabase db push
 ```
 
-Sem a CLI: abra o **SQL Editor** e rode, em ordem, só os arquivos que ainda não rodou. Na Etapa 3 é o `20261116000100_etapa3_permissoes_regras_padrao.sql`; na Etapa 4, o `20261116000200_etapa4_importacao_ia.sql`; na Etapa 5, o `20261117000100_etapa5_patrimonio.sql`.
+Sem a CLI: abra o **SQL Editor** e rode, em ordem, só os arquivos que ainda não rodou. Na Etapa 3 é o `20261116000100_etapa3_permissoes_regras_padrao.sql`; na Etapa 4, o `20261116000200_etapa4_importacao_ia.sql`; na Etapa 5, o `20261117000100_etapa5_patrimonio.sql`; na Etapa 7, o `20261117000200_etapa7_protecoes.sql`.
 
 ### Chave da IA (a partir da Etapa 4)
 

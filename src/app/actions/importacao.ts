@@ -39,6 +39,7 @@ export async function consentirIA(): Promise<{ erro?: string }> {
   if (error) return { erro: "Não foi possível registrar a autorização." };
   revalidatePath("/lancamentos/importar");
   revalidatePath("/patrimonio/importar");
+  revalidatePath("/protecoes");
   return {};
 }
 
@@ -336,6 +337,7 @@ export async function descartarImportacao(id: string): Promise<{ erro?: string }
   await apagarArquivos(id, data.arquivos);
   revalidatePath("/lancamentos/importar");
   revalidatePath("/patrimonio/importar");
+  revalidatePath("/protecoes");
   return {};
 }
 
