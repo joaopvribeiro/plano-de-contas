@@ -11,9 +11,9 @@ import { lerCSVBanco } from "@/lib/importacao/csv-banco";
 import { categorizarComIA, lerDocumentoComIA, type UsoIA } from "@/lib/importacao/ia";
 import { decodificarTexto, formatoDoArquivo, type DocumentoLido } from "@/lib/importacao/tipos";
 import { editarLinha, parcelasFuturas, pendenciaDaLinha } from "@/lib/importacao/revisao";
+import { apagarArquivos, BUCKET } from "@/lib/importacao/arquivos";
 import { carregarRevisao, VERSAO_CONSENTIMENTO_IA, situacaoIA } from "@/lib/importacao/consultas";
 
-const BUCKET = "familias";
 const MAX_ARQUIVOS = 4;
 const MAX_BYTES = 20 * 1024 * 1024;
 const MAX_BYTES_IMAGEM = 5 * 1024 * 1024;
@@ -38,6 +38,7 @@ export async function consentirIA(): Promise<{ erro?: string }> {
     );
   if (error) return { erro: "Não foi possível registrar a autorização." };
   revalidatePath("/lancamentos/importar");
+  revalidatePath("/patrimonio/importar");
   return {};
 }
 
@@ -334,13 +335,7 @@ export async function descartarImportacao(id: string): Promise<{ erro?: string }
   if (!data) return { erro: "Importação não encontrada." };
   await apagarArquivos(id, data.arquivos);
   revalidatePath("/lancamentos/importar");
+  revalidatePath("/patrimonio/importar");
   return {};
 }
 
-/** Os arquivos originais saem do Storage assim que a importação é concluída ou descartada. */
-async function apagarArquivos(id: string, caminhos: string[]) {
-  if (!caminhos.length) return;
-  const supabase = await criarClienteServidor();
-  const { error } = await supabase.storage.from(BUCKET).remove(caminhos);
-  if (!error) await supabase.from("importacoes").update({ arquivos_expurgados_em: new Date().toISOString() }).eq("id", id);
-}

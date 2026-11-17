@@ -38,6 +38,7 @@ export async function listarImportacoes(familiaId: string): Promise<ImportacaoRe
     .from("importacoes")
     .select("id, status, criado_em, nomes_arquivos, resposta_ia, contas(nome), lancamentos(count)")
     .eq("familia_id", familiaId)
+    .eq("tipo", "extrato")
     .order("criado_em", { ascending: false })
     .limit(20);
   return (data ?? []).map((i) => {

@@ -20,6 +20,8 @@ import {
   interpretarDocumento,
 } from "./ia-esquema";
 import type { DocumentoLido } from "./tipos";
+import { ESQUEMA_RELATORIO, INSTRUCOES_RELATORIO, interpretarRelatorio, type RelatorioLido } from "@/lib/relatorio/esquema";
+import { RELATORIO_EXEMPLO } from "@/lib/relatorio/exemplo";
 
 export const MODELO_EXTRACAO = process.env.ANTHROPIC_MODEL_EXTRACAO || "claude-haiku-5-5";
 const MAX_TOKENS = 32000;
@@ -121,6 +123,29 @@ export async function categorizarComIA(doc: DocumentoLido, categorias: string[])
   } catch (e) {
     console.error("[importacao] erro na IA (categorização)", e instanceof Error ? e.message : e);
     return { doc, erro: mensagemDeErro(e) };
+  }
+}
+
+/** Lê um relatório de investimentos (PDF). */
+export async function lerRelatorioComIA(pdf: Uint8Array): Promise<{ rel?: RelatorioLido; erro?: string; uso?: UsoIA }> {
+  if (iaSimulada()) return { rel: structuredClone(RELATORIO_EXEMPLO), uso: { modelo: "simulado", entrada: 0, saida: 0 } };
+  if (!process.env.ANTHROPIC_API_KEY) return { erro: "A leitura com IA ainda não foi configurada (falta a chave da Anthropic)." };
+  try {
+    const r = await chamar(
+      INSTRUCOES_RELATORIO,
+      [
+        { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64(pdf) } },
+        { type: "text", text: "Liste as posições do relatório acima." },
+      ],
+      ESQUEMA_RELATORIO,
+    );
+    if ("erro" in r && r.erro) return { erro: r.erro, uso: r.uso };
+    const rel = interpretarRelatorio(r.json);
+    if ("erro" in rel) return { erro: rel.erro, uso: r.uso };
+    return { rel, uso: r.uso };
+  } catch (e) {
+    console.error("[relatorio] erro na IA", e instanceof Error ? e.message : e);
+    return { erro: mensagemDeErro(e) };
   }
 }
 
