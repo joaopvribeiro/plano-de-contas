@@ -86,6 +86,7 @@ export default async function PaginaPatrimonio() {
           detalhe={
             <>
               Carteira + FGTS {formatBRL(r.fgts)} + bens {formatBRL(r.bens)}
+              {r.empresas > 0 && <> + empresas {formatBRL(r.empresas)}</>}
               {r.dividas > 0 && <> − dívidas {formatBRL(r.dividas)}</>}
             </>
           }

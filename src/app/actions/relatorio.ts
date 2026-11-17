@@ -120,7 +120,8 @@ export async function confirmarRelatorio(entrada: z.input<typeof esquemaConfirma
     const base = porIdx.get(e.idx);
     if (!base) return { erro: "A revisão mudou. Recarregue a página." };
     if (!e.incluir) continue;
-    if (e.categoria === "Consórcio") return { erro: `"${e.nome}": consórcio não vem de relatório de investimentos.` };
+    if (e.categoria === "Consórcio" || e.categoria === "Equity" || e.categoria === "Bem")
+      return { erro: `"${e.nome}": essa categoria não vem de relatório de investimentos.` };
     const comum = {
       categoria: e.categoria,
       produto: base.produto,

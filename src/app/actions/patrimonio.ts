@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { obterFamiliaAtiva } from "@/lib/sessao";
-import { CATEGORIAS_ATIVO, RISCOS, TIPOS_PASSIVO } from "@/lib/patrimonio";
+import { CAMPOS_DA_CATEGORIA, CATEGORIAS_ATIVO, METODOS_EQUITY, RISCOS, TIPOS_PASSIVO, valorEquity } from "@/lib/patrimonio";
 import { lerValorBRL } from "@/lib/lancamentos/regras-de-negocio";
 import { hojeISO } from "@/lib/format";
 
@@ -64,11 +64,11 @@ function revalidar() {
 const esquemaAtivo = z
   .object({
     id: z.uuid().optional(),
-    nome: z.string().trim().min(1, "Informe o nome.").max(120),
+    nome: z.string().trim().max(120).optional(),
     categoria: z.enum(CATEGORIAS_ATIVO, "Escolha a categoria."),
     instituicao: texto(80),
     produto: texto(120),
-    valor: dinheiro("o saldo"),
+    valor: dinheiro("o saldo", false),
     liquidez: texto(40),
     risco: z.enum(RISCOS).nullable().optional(),
     data_saldo: data,
@@ -77,8 +77,44 @@ const esquemaAtivo = z
     consorcio_parcela_mensal: dinheiro("a parcela", false).optional(),
     consorcio_contemplado: z.boolean().optional(),
     conta_liberdade: z.boolean().optional(),
+    previdencia_tipo: z.enum(["PGBL", "VGBL"]).nullable().optional(),
+    equity_participacao: z
+      .union([z.string(), z.number()])
+      .transform((v, ctx) => {
+        if (v === "") return null;
+        const n = typeof v === "number" ? v : Number(String(v).replace("%", "").replace(",", ".").trim());
+        if (!Number.isFinite(n) || n <= 0 || n > 100) {
+          ctx.addIssue({ code: "custom", message: "Participação entre 0 e 100%." });
+          return null;
+        }
+        return n;
+      })
+      .optional(),
+    equity_metodo: z.enum(METODOS_EQUITY).nullable().optional(),
+    equity_base: dinheiro("o valor-base", false).optional(),
+    equity_multiplo: z
+      .union([z.string(), z.number()])
+      .transform((v, ctx) => {
+        if (v === "") return null;
+        const n = typeof v === "number" ? v : Number(String(v).replace(",", ".").replace(/x$/i, "").trim());
+        if (!Number.isFinite(n) || n <= 0 || n > 1000) {
+          ctx.addIssue({ code: "custom", message: "Múltiplo inválido (ex.: 6 ou 1,5)." });
+          return null;
+        }
+        return n;
+      })
+      .optional(),
   })
   .superRefine((a, ctx) => {
+    if (a.categoria !== "FGTS" && !a.nome) ctx.addIssue({ code: "custom", path: ["nome"], message: "Informe o nome." });
+    if (a.categoria !== "Equity" && a.valor === null) ctx.addIssue({ code: "custom", path: ["valor"], message: "Informe o valor." });
+    if (a.categoria === "Equity") {
+      if (!a.equity_participacao) ctx.addIssue({ code: "custom", path: ["equity_participacao"], message: "Informe a participação (%)." });
+      if (!a.equity_metodo) ctx.addIssue({ code: "custom", path: ["equity_metodo"], message: "Escolha como estimar o valor." });
+      if (!a.equity_base) ctx.addIssue({ code: "custom", path: ["equity_base"], message: "Informe o valor-base." });
+      if (a.equity_metodo && a.equity_metodo !== "valuation" && !a.equity_multiplo)
+        ctx.addIssue({ code: "custom", path: ["equity_multiplo"], message: "Informe o múltiplo." });
+    }
     if (a.categoria !== "Consórcio") return;
     if (!a.consorcio_prazo_meses) ctx.addIssue({ code: "custom", path: ["consorcio_prazo_meses"], message: "Informe o prazo total." });
     if (a.consorcio_parcelas_pagas == null) ctx.addIssue({ code: "custom", path: ["consorcio_parcelas_pagas"], message: "Informe as parcelas pagas." });
@@ -93,9 +129,24 @@ export async function salvarAtivo(entrada: z.input<typeof esquemaAtivo>): Promis
   if (!p.success) return errosDe(p.error);
   const { id, ...a } = p.data;
   const consorcio = a.categoria === "Consórcio";
+  const equity = a.categoria === "Equity";
+  const campos = CAMPOS_DA_CATEGORIA[a.categoria];
+  // Cada categoria guarda só os campos que fazem sentido para ela.
   const dados = {
     ...a,
-    risco: a.risco ?? null,
+    nome: a.categoria === "FGTS" ? a.nome || "FGTS" : a.nome!,
+    instituicao: campos.instituicao ? (a.instituicao ?? null) : null,
+    // Bem: o tipo (imóvel, terreno, veículo) fica em "produto".
+    produto: campos.produto || a.categoria === "Bem" ? (a.produto ?? null) : null,
+    liquidez: campos.liquidezRisco ? (a.liquidez ?? null) : null,
+    risco: campos.liquidezRisco ? (a.risco ?? null) : null,
+    conta_liberdade: campos.liberdade ? Boolean(a.conta_liberdade) : false,
+    previdencia_tipo: a.categoria === "Previdência" ? (a.previdencia_tipo ?? null) : null,
+    equity_participacao: equity ? a.equity_participacao : null,
+    equity_metodo: equity ? a.equity_metodo : null,
+    equity_base: equity ? a.equity_base : null,
+    equity_multiplo: equity && a.equity_metodo !== "valuation" ? a.equity_multiplo : null,
+    valor: equity ? valorEquity(a.equity_metodo!, a.equity_base!, a.equity_multiplo ?? null, a.equity_participacao!) : a.valor!,
     consorcio_prazo_meses: consorcio ? a.consorcio_prazo_meses : null,
     consorcio_parcelas_pagas: consorcio ? a.consorcio_parcelas_pagas : null,
     consorcio_parcela_mensal: consorcio ? a.consorcio_parcela_mensal : null,
