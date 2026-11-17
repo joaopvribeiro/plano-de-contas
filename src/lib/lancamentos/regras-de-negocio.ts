@@ -101,10 +101,16 @@ export function regraParaDescricao<T extends Pick<Regra, "padrao">>(descricao: s
  * Sugere um padrão de regra a partir de uma descrição: a primeira palavra
  * significativa (ignora números, datas e códigos curtos). "PETZ*123 SP" → "PETZ".
  */
+/** Prefixos de intermediadores de pagamento e termos genéricos que não identificam o estabelecimento. */
+const GENERICOS = new Set([
+  "S2P", "PAG", "PAGSEGURO", "MP", "MERCADOPAGO", "EC", "EBN", "EBANX", "PAYPAL", "PG", "STONE", "CIELO", "SUMUP", "IFD",
+  "PIX", "TED", "DOC", "COMPRA", "DEBITO", "CREDITO", "ENVIADO", "ENVIADA", "RECEBIDO", "RECEBIDA", "TRANSFERENCIA", "PARC", "PARCELA",
+]);
+
 export function sugerirPadrao(descricao: string): string {
   const palavras = normalizarDescricao(descricao).split(" ");
-  const boa = palavras.find((p) => p.length >= 3 && !/^\d+$/.test(p));
-  return boa ?? palavras[0] ?? "";
+  const boa = palavras.find((p) => p.length >= 3 && !/^\d+$/.test(p) && !GENERICOS.has(p));
+  return boa ?? palavras.find((p) => p.length >= 3 && !/^\d+$/.test(p)) ?? palavras[0] ?? "";
 }
 
 // ---------------------------------------------------------------------------

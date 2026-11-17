@@ -38,7 +38,16 @@ test("CSV sem IA: regra, duplicada, receita e categoria escolhida na revisão", 
 
   const padaria = page.getByRole("listitem").filter({ hasText: "PADARIA DO ZE" });
   await padaria.getByLabel("Categoria").selectOption({ label: "Alimentação" });
-  await padaria.getByLabel(/Criar regra para os próximos: "PADARIA"/).check();
+  await padaria.getByLabel("Criar regra para os próximos meses").check();
+  const padrao = padaria.getByLabel("quando a descrição contiver");
+  await expect(padrao).toHaveValue("PADARIA");
+  // Texto que não aparece na descrição bloqueia a confirmação.
+  await padrao.fill("MERCADO");
+  await expect(page.getByText("1 regra com texto que não aparece na descrição")).toBeVisible();
+  await expect(confirmar).toBeDisabled();
+  await padrao.fill("PADARIA DO ZE");
+  // Linha que já veio de regra não oferece outra.
+  await expect(page.getByRole("listitem").filter({ hasText: "PETZ PINHEIROS" }).getByLabel("Criar regra para os próximos meses")).toHaveCount(0);
   await confirmar.click();
 
   await expect(page.getByRole("heading", { name: "Importação confirmada" })).toBeVisible();
@@ -49,7 +58,7 @@ test("CSV sem IA: regra, duplicada, receita e categoria escolhida na revisão", 
   await expect(lista.locator("tbody").getByText("PETZ PINHEIROS")).toBeVisible();
   await expect(lista.locator("tbody").getByText("TED RECEBIDA")).toBeVisible();
   await page.goto("/lancamentos/regras");
-  await expect(page.getByText("PADARIA", { exact: true })).toBeVisible();
+  await expect(page.getByText("PADARIA DO ZE", { exact: true })).toBeVisible();
 });
 
 test("PDF com IA: autorização, fatura conferida, parcela ligada e parcelas futuras", async ({ page }) => {

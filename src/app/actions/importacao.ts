@@ -230,6 +230,7 @@ const esquemaConfirmacao = z.object({
         mes_competencia: mes,
         criar_futuras: z.boolean(),
         criar_regra: z.boolean().default(false),
+        padrao_regra: z.string().max(60).optional(),
       }),
     )
     .max(2000),
@@ -293,9 +294,11 @@ export async function confirmarImportacao(entrada: z.input<typeof esquemaConfirm
         futuras++;
       }
     }
-    if (e.criar_regra && l.sugestao === "manual") {
-      const padrao = sugerirPadrao(l.descricao);
-      if (padrao.length >= 2 && !regras.has(padrao)) regras.set(padrao, { padrao: normalizarDescricao(padrao), natureza: l.natureza, categoria_id: l.categoria_id, classe: l.classe });
+    // Regra pedida na revisão: o texto precisa aparecer na descrição; linha que já veio de regra não cria outra.
+    if (e.criar_regra && base.sugestao !== "regra") {
+      const padrao = normalizarDescricao(e.padrao_regra ?? sugerirPadrao(l.descricao));
+      if (padrao.length < 2 || !normalizarDescricao(l.descricao).includes(padrao)) return { erro: `Regra de "${l.descricao}": o texto precisa aparecer na descrição.` };
+      if (!regras.has(padrao)) regras.set(padrao, { padrao, natureza: l.natureza, categoria_id: l.categoria_id, classe: l.classe });
     }
   }
   if (!lancamentos.length) return { erro: "Marque ao menos um lançamento, ou descarte a importação." };
