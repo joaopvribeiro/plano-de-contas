@@ -66,8 +66,23 @@ export type ContextoRevisao = {
 const mesDaData = (d: string) => d.slice(0, 7);
 
 /** Mês da fatura sugerido: o do fechamento lido. */
-export function mesFaturaSugerido(doc: DocumentoLido): string | null {
-  return doc.fechamento ? mesDaData(doc.fechamento) : null;
+export function mesFaturaSugerido(doc: DocumentoLido, conta?: Pick<Conta, "tipo" | "dia_fechamento">): string | null {
+  if (doc.fechamento) return mesDaData(doc.fechamento);
+  // Sem fechamento lido: o vencimento costuma cair uns 7 a 10 dias depois do fechamento.
+  if (doc.vencimento) {
+    const d = new Date(`${doc.vencimento}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 7);
+    return d.toISOString().slice(0, 7);
+  }
+  // Sem nenhuma das datas: o ciclo da compra mais recente (parcelas antigas não puxam o mês para trás).
+  if (!doc.itens.length) return null;
+  const meses = doc.itens.map((i) => (conta && ehCartao(conta) ? sugerirCompetencia(i.data, conta) : mesDaData(i.data)));
+  return meses.sort().at(-1) ?? null;
+}
+
+/** Fatura de cartão: pelo tipo da conta escolhida ou pelo que a leitura identificou. */
+export function ehFatura(doc: Pick<DocumentoLido, "tipo">, conta: Pick<Conta, "tipo">) {
+  return ehCartao(conta) || doc.tipo === "fatura_cartao";
 }
 
 export function ehCartao(conta: Pick<Conta, "tipo">) {
@@ -80,9 +95,14 @@ export function estornoPara(classe: Classe | null, sentido: Sentido): boolean {
   return classe === "Receita" ? sentido === "saida" : sentido === "entrada";
 }
 
-function competencia(item: ItemLido, ctx: ContextoRevisao, doc: DocumentoLido): string {
-  if (!ehCartao(ctx.conta)) return mesDaData(item.data);
-  return ctx.mes_fatura ?? mesFaturaSugerido(doc) ?? sugerirCompetencia(item.data, ctx.conta);
+/**
+ * Fatura: todas as linhas no mês de fechamento, inclusive parcelas de compras antigas
+ * (a parcela 10/12 de uma compra de janeiro entra no mês da fatura que a cobra).
+ * Extrato de conta: mês da data.
+ */
+function competencia(item: ItemLido, ctx: ContextoRevisao, doc: DocumentoLido, mesFatura: string | null): string {
+  if (!ehFatura(doc, ctx.conta)) return mesDaData(item.data);
+  return ctx.mes_fatura ?? mesFatura ?? mesDaData(item.data);
 }
 
 /** Primeira palavra significativa igual, ou uma descrição contida na outra. */
@@ -114,7 +134,8 @@ export function montarRevisao(doc: DocumentoLido, ctx: ContextoRevisao): LinhaRe
   const porId = new Map(ativas.map((c) => [c.id, c]));
   const receita = ativas.find((c) => c.classe_padrao === "Receita");
   const usadas = new Set<string>();
-  const cartao = ehCartao(ctx.conta);
+  const cartao = ehFatura(doc, ctx.conta);
+  const mesFatura = mesFaturaSugerido(doc, ctx.conta);
 
   const linhas = doc.itens.map((item, idx): LinhaRevisao => {
     let natureza: Natureza = "fluxo";
@@ -177,7 +198,7 @@ export function montarRevisao(doc: DocumentoLido, ctx: ContextoRevisao): LinhaRe
       classe,
       estorno: natureza === "fluxo" ? estornoPara(classe, item.sentido) : false,
       assinatura,
-      mes_competencia: competencia(item, ctx, doc),
+      mes_competencia: competencia(item, ctx, doc, mesFatura),
       sugestao,
       regra: regraPadrao,
       duplicada,

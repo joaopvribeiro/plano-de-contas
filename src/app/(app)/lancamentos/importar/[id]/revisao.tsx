@@ -149,9 +149,9 @@ export function RevisaoImportacao({
               aria-describedby="mes_fatura-dica"
             />
           </div>
-          <p id="mes_fatura-dica" className="max-w-md text-xs text-muted">
-            Todas as compras desta fatura entram no mês em que ela fecha
-            {documento.fechamento ? ` (fechamento lido: ${formatData(documento.fechamento)})` : ""}.
+          <p id="mes_fatura-dica" className="max-w-xl text-xs text-muted">
+            Competência de todas as linhas desta fatura, inclusive parcelas de compras feitas em meses anteriores. Padrão: o mês do
+            fechamento{documento.fechamento ? ` (fechamento lido: ${formatData(documento.fechamento)})` : documento.vencimento ? ` (estimado pelo vencimento em ${formatData(documento.vencimento)})` : ""}.
           </p>
         </Cartao>
       )}

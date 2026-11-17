@@ -2,7 +2,7 @@ import "server-only";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import type { Categoria, Conta, Regra } from "@/lib/dominio";
 import { iaDisponivel } from "./ia";
-import { conferirTotal, mesFaturaSugerido, montarRevisao, type Conferencia, type Duplicada, type LinhaRevisao, type ParcelaAberta } from "./revisao";
+import { conferirTotal, ehFatura, mesFaturaSugerido, montarRevisao, type Conferencia, type Duplicada, type LinhaRevisao, type ParcelaAberta } from "./revisao";
 import type { DocumentoLido } from "./tipos";
 
 export const VERSAO_CONSENTIMENTO_IA = "ia-v1";
@@ -135,6 +135,6 @@ export async function carregarRevisao(familiaId: string, id: string, consultor: 
     categorias: ctx.categorias,
     linhas,
     conferencia: conferirTotal(doc, linhas),
-    mes_fatura: conta.tipo === "cartao_credito" ? (mesFaturaSugerido(doc) ?? null) : null,
+    mes_fatura: ehFatura(doc, conta) ? (mesFaturaSugerido(doc, conta) ?? null) : null,
   };
 }

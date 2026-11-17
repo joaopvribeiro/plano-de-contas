@@ -50,9 +50,24 @@ describe("montarRevisao", () => {
     expect(montarRevisao(d, ctx({ mes_fatura: "2026-11" })).map((l) => l.mes_competencia)).toEqual(["2026-11", "2026-11"]);
   });
 
-  it("cartão sem fechamento lido: regra do dia de fechamento do cartão", () => {
-    const d = doc([item({ data: "2026-10-28" }), item({ data: "2026-10-29" })], { fechamento: null });
-    expect(montarRevisao(d, ctx()).map((l) => l.mes_competencia)).toEqual(["2026-10", "2026-11"]);
+  it("parcela de compra antiga entra no mês da fatura, não no da compra", () => {
+    const d = doc([item({ data: "2026-01-08", parcela: "10/12" }), item({ data: "2026-10-20" })]);
+    expect(montarRevisao(d, ctx()).map((l) => l.mes_competencia)).toEqual(["2026-10", "2026-10"]);
+  });
+
+  it("sem fechamento: estima pelo vencimento; sem datas: ciclo da compra mais recente", () => {
+    const itens = [item({ data: "2026-01-08", parcela: "10/12" }), item({ data: "2026-10-29" })];
+    expect(montarRevisao(doc(itens, { fechamento: null, vencimento: "2026-11-05" }), ctx()).map((l) => l.mes_competencia)).toEqual(["2026-10", "2026-10"]);
+    expect(montarRevisao(doc(itens, { fechamento: null, vencimento: null }), ctx()).map((l) => l.mes_competencia)).toEqual(["2026-11", "2026-11"]);
+  });
+
+  it("fatura enviada para uma conta corrente continua no mês da fatura", () => {
+    const linhas = montarRevisao(doc([item({ data: "2026-03-11", parcela: "8/10" }), item({ sentido: "entrada", descricao: "PAGAMENTO RECEBIDO" })]), ctx({ conta }));
+    expect(linhas.map((l) => [l.mes_competencia, l.natureza])).toEqual([
+      ["2026-10", "fluxo"],
+      ["2026-10", "transferencia"],
+    ]);
+    expect(parcelasFuturas(linhas[0]).map((f) => f.mes_competencia)).toEqual(["2026-11", "2026-12"]);
   });
 
   it("conta: mês da data; entrada sem sugestão vira Receita", () => {
