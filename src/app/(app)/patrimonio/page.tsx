@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileUp } from "lucide-react";
+import { FileUp, Sheet } from "lucide-react";
 import { Cartao, cn } from "@/components/ui";
 import { TituloPagina } from "@/components/em-construcao";
 import { obterFamiliaAtiva } from "@/lib/sessao";
@@ -71,6 +71,12 @@ export default async function PaginaPatrimonio() {
             className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-surface px-4 text-sm font-semibold hover:bg-surface-2"
           >
             <FileUp className="size-4" aria-hidden /> Importar relatório
+          </Link>
+          <Link
+            href="/patrimonio/importar-planilha"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-surface px-4 text-sm font-semibold hover:bg-surface-2"
+          >
+            <Sheet className="size-4" aria-hidden /> Importar planilha
           </Link>
           <BotoesNovo reserva={reserva} />
         </div>

@@ -4,7 +4,7 @@ Plataforma de planejamento financeiro familiar da Resolutto: Dashboard & DFC, La
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Auth, Postgres com RLS, Storage) · Zod · Vitest · Playwright · Vercel.
 
-## Estado atual: Etapas 1 a 7 concluídas
+## Estado atual: Etapas 1 a 8 concluídas
 
 - Esquema completo do banco (23 tabelas), RLS em todas, Storage privado por família.
 - Papéis: membro, consultor e consultor admin. Convite por e-mail.
@@ -18,6 +18,7 @@ Plataforma de planejamento financeiro familiar da Resolutto: Dashboard & DFC, La
 - **Patrimônio (Etapa 5):** carteira investida, patrimônio líquido, direitos futuros e patrimônio com direitos; distribuição por categoria e instituição; evolução mensal; balanço por grupo com saldo desatualizado em destaque; ativos, dívidas e consórcios. Leitura de relatórios de investimento (XP, BTG e outros) com IA, conferida contra o patrimônio bruto, sugerindo a reserva até a meta e atualizando os mesmos ativos mês a mês.
 - **Objetivos (Etapa 6):** liberdade financeira (saldo de hoje no prazo e aporte mensal necessário, em reais de hoje), reserva de emergência (quantos meses cobre), consórcios e projetos com quanto guardar por mês. O consultor edita as premissas e pode prever o aporte de um projeto no orçamento.
 - **Proteções (Etapa 7):** prêmios mensais, apólices lidas pela IA e renovações em 60 dias; cards por tipo com os destaques; detalhe com resumo, carências, exclusões, como acionar e o arquivo original; leitura de apólice (PDF ou até 3 fotos) com revisão; cadastro à mão; "Incluir prêmio no orçamento" para o consultor.
+- **Etapa 8:** análise da IA do mês no Dashboard ("O que os gastos estão dizendo"); painel do consultor com indicadores e alertas por família e limites de IA editáveis; importação de ativos por planilha.
 - Testes de unidade, de banco (isolamento entre famílias e permissões) e de ponta a ponta.
 
 ## Atualizar um Supabase que já está no ar
@@ -32,7 +33,7 @@ Sem a CLI: abra o **SQL Editor** e rode, em ordem, só os arquivos que ainda nã
 
 ### Chave da IA (a partir da Etapa 4)
 
-Na Vercel (Settings → Environment Variables), cadastre `ANTHROPIC_API_KEY` com uma chave criada em console.anthropic.com. Opcional: `ANTHROPIC_MODEL_EXTRACAO` (padrão `claude-haiku-5-5`). Sem a chave, OFX e CSV continuam funcionando e PDFs e fotos ficam indisponíveis, com aviso na tela. `IA_SIMULADA=1` é só para testes automáticos: nunca cadastre na Vercel.
+Na Vercel (Settings → Environment Variables), cadastre `ANTHROPIC_API_KEY` com uma chave criada em console.anthropic.com. Opcionais: `ANTHROPIC_MODEL_EXTRACAO` e `ANTHROPIC_MODEL_INSIGHTS` (padrão `claude-haiku-5-5` nos dois). Sem a chave, OFX e CSV continuam funcionando e PDFs e fotos ficam indisponíveis, com aviso na tela. `IA_SIMULADA=1` é só para testes automáticos: nunca cadastre na Vercel.
 
 As decisões estão em [`DECISOES.md`](DECISOES.md).
 

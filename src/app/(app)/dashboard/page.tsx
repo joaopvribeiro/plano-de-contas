@@ -5,8 +5,12 @@ import { TituloPagina } from "@/components/em-construcao";
 import { obterFamiliaAtiva } from "@/lib/sessao";
 import { carregarDashboard } from "@/lib/dashboard/consultas";
 import { distribuicao, mesesCobertos, metaDaReserva, type StatusMeta } from "@/lib/dfc";
-import { formatBRL, formatMesCurto, formatMesLongo, mesAtual, mesPadraoNoHorizonte, somarMeses } from "@/lib/format";
+import { formatBRL, formatDataHora, formatMesCurto, formatMesLongo, mesAtual, mesPadraoNoHorizonte, somarMeses } from "@/lib/format";
 import { GraficoFluxo } from "./grafico";
+import { InsightsDoMes } from "./insights";
+import { criarClienteServidor } from "@/lib/supabase/server";
+import { situacaoIA } from "@/lib/importacao/consultas";
+import { lerInsightGuardado } from "@/lib/insights";
 import { MatrizDFC } from "./matriz";
 import { SeletorMes } from "./seletor-mes";
 
@@ -33,13 +37,22 @@ const STATUS: Record<StatusMeta, { rotulo: string; cor: string; barra: string; I
 
 export default async function PaginaDashboard({ searchParams }: PageProps<"/dashboard">) {
   const { familia } = await obterFamiliaAtiva();
-  const d = await carregarDashboard(familia.id);
+  const supabase = await criarClienteServidor();
+  const [d, ia] = await Promise.all([carregarDashboard(familia.id), situacaoIA(familia.id, "insight")]);
   const sp = await searchParams;
 
   const atual = mesAtual();
   const pedido = typeof sp.mes === "string" ? sp.mes : undefined;
   const mes = pedido && d.meses.includes(pedido) ? pedido : mesPadraoNoHorizonte(d.meses, atual);
   const col = d.dfc.meses.find((m) => m.mes === mes)!;
+  const { data: insight } = await supabase
+    .from("insights")
+    .select("texto, gerado_em")
+    .eq("familia_id", familia.id)
+    .eq("mes", mes)
+    .order("gerado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   const fim = d.meses[d.meses.length - 1];
 
   // Aviso de horizonte: faltam 2 meses ou menos, ou já acabou.
@@ -227,9 +240,14 @@ export default async function PaginaDashboard({ searchParams }: PageProps<"/dash
         <MatrizDFC dfc={d.dfc} mesSelecionado={mes} nomeFamilia={familia.nome} />
       </section>
 
-      <Cartao className="mt-6 border-dashed text-sm text-muted">
-        Insights da IA do mês (“O que os gastos estão dizendo”) chegam na Etapa 8.
-      </Cartao>
+      <InsightsDoMes
+        mes={mes}
+        rotuloMes={formatMesLongo(mes)}
+        observacoes={insight ? lerInsightGuardado(insight.texto).observacoes : null}
+        geradoEm={insight ? formatDataHora(insight.gerado_em) : null}
+        ia={{ liberada: ia.consentimento && ia.disponivel, consentimento: ia.consentimento, restantes: ia.restantes, limite: ia.limite }}
+        temRealizado={Boolean(r)}
+      />
     </>
   );
 }

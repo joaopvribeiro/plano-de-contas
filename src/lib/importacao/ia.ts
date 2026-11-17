@@ -22,9 +22,11 @@ import {
 import type { DocumentoLido } from "./tipos";
 import { ESQUEMA_RELATORIO, INSTRUCOES_RELATORIO, interpretarRelatorio, type RelatorioLido } from "@/lib/relatorio/esquema";
 import { RELATORIO_EXEMPLO } from "@/lib/relatorio/exemplo";
+import { ESQUEMA_INSIGHTS, INSIGHTS_EXEMPLO, INSTRUCOES_INSIGHTS, interpretarInsights, type Observacao } from "@/lib/insights";
 import { APOLICE_EXEMPLO, ESQUEMA_APOLICE, INSTRUCOES_APOLICE, interpretarApolice, type DadosApolice } from "@/lib/apolices/modelo";
 
 export const MODELO_EXTRACAO = process.env.ANTHROPIC_MODEL_EXTRACAO || "claude-haiku-5-5";
+export const MODELO_INSIGHTS = process.env.ANTHROPIC_MODEL_INSIGHTS || "claude-haiku-5-5";
 const MAX_TOKENS = 32000;
 
 export type UsoIA = { modelo: string; entrada: number; saida: number };
@@ -47,16 +49,16 @@ function base64(bytes: Uint8Array) {
   return Buffer.from(bytes).toString("base64");
 }
 
-async function chamar(sistema: string, conteudo: Anthropic.ContentBlockParam[], esquema: Record<string, unknown>) {
+async function chamar(sistema: string, conteudo: Anthropic.ContentBlockParam[], esquema: Record<string, unknown>, modelo = MODELO_EXTRACAO, maxTokens = MAX_TOKENS) {
   const stream = cliente().messages.stream({
-    model: MODELO_EXTRACAO,
-    max_tokens: MAX_TOKENS,
+    model: modelo,
+    max_tokens: maxTokens,
     system: sistema,
     messages: [{ role: "user", content: conteudo }],
     output_config: { format: { type: "json_schema", schema: esquema } },
   });
   const msg = await stream.finalMessage();
-  const uso: UsoIA = { modelo: MODELO_EXTRACAO, entrada: msg.usage.input_tokens, saida: msg.usage.output_tokens };
+  const uso: UsoIA = { modelo, entrada: msg.usage.input_tokens, saida: msg.usage.output_tokens };
   if (msg.stop_reason === "max_tokens") return { uso, erro: "O documento é grande demais para uma leitura só. Envie menos páginas por vez." };
   if (msg.stop_reason === "refusal") return { uso, erro: "A leitura foi recusada para este arquivo." };
   const texto = msg.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
@@ -168,6 +170,22 @@ export async function lerApoliceComIA(arquivos: ArquivoParaIA[]): Promise<{ apol
     return { apolice, uso: r.uso };
   } catch (e) {
     console.error("[apolice] erro na IA", e instanceof Error ? e.message : e);
+    return { erro: mensagemDeErro(e) };
+  }
+}
+
+/** Observações do mês a partir do resumo agregado (sem documentos). */
+export async function gerarInsightsComIA(resumo: unknown): Promise<{ observacoes?: Observacao[]; erro?: string; uso?: UsoIA }> {
+  if (iaSimulada()) return { observacoes: INSIGHTS_EXEMPLO, uso: { modelo: "simulado", entrada: 0, saida: 0 } };
+  if (!process.env.ANTHROPIC_API_KEY) return { erro: "A IA ainda não foi configurada (falta a chave da Anthropic)." };
+  try {
+    const r = await chamar(INSTRUCOES_INSIGHTS, [{ type: "text", text: JSON.stringify(resumo) }], ESQUEMA_INSIGHTS, MODELO_INSIGHTS, 4000);
+    if ("erro" in r && r.erro) return { erro: r.erro, uso: r.uso };
+    const observacoes = interpretarInsights(r.json);
+    if (!observacoes) return { erro: "A resposta veio num formato inesperado. Tente de novo.", uso: r.uso };
+    return { observacoes, uso: r.uso };
+  } catch (e) {
+    console.error("[insights] erro na IA", e instanceof Error ? e.message : e);
     return { erro: mensagemDeErro(e) };
   }
 }

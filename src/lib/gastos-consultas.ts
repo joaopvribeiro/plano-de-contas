@@ -3,7 +3,7 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import type { Classe } from "@/lib/dominio";
 import type { LancamentoGasto } from "@/lib/gastos";
 
-const CAMPOS = "id, tipo, natureza, classe, categoria_id, conta_id, valor, estorno, data, descricao, parcela, mes_competencia";
+const CAMPOS = "id, tipo, natureza, classe, categoria_id, conta_id, valor, estorno, data, descricao, parcela, mes_competencia, assinatura";
 
 /** Busca em páginas de 1000 (limite do PostgREST). */
 async function todas<T>(consulta: (de: number, ate: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> {
