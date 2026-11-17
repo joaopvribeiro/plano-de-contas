@@ -6,6 +6,7 @@ import { cn } from "@/components/ui";
 
 const ITENS = [
   { href: "/lancamentos", rotulo: "Lançamentos" },
+  { href: "/lancamentos/gastos", rotulo: "Resumo de gastos" },
   { href: "/lancamentos/importar", rotulo: "Importar extrato" },
   { href: "/lancamentos/contas", rotulo: "Contas e cartões" },
   { href: "/lancamentos/categorias", rotulo: "Categorias" },

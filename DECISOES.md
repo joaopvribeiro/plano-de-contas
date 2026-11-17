@@ -148,6 +148,12 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - No balanço, o fundo aparece nos dois grupos: em Reserva, a parte; em Investimentos, o restante, com o saldo total na linha. Carteira e patrimônio não mudam (não há dupla contagem).
 - A parte entra no saldo da reserva do Dashboard, de Objetivos, da distribuição por categoria e da sugestão de reserva dos relatórios. Se o saldo cair abaixo da parte, conta só o saldo. Vale só para a categoria Investimentos.
 
+## Resumo de gastos e relatório da fatura (17/11, pedido do João)
+
+- **Resumo de gastos** (Lançamentos, para a família e o consultor): tudo o que saiu no mês, faturas e contas. Gasto = realizado de natureza fluxo e classe de despesa, líquido de estornos; pagamento de fatura (transferência) e aplicações não contam. O mês é o de competência (no cartão, o da fatura).
+- **Filtros**: todas as contas, só cartões, só contas correntes ou uma conta. Mostra o total de cada fatura/conta, gastos por categoria (barra do realizado com a marca do previsto da mesma seleção), por classe contra a meta (percentual da receita do mês; o status só aparece na visão de todas as contas), parcelas em andamento, estornos e parcelas a vencer por mês.
+- **Relatório da fatura** (só cartões, por enquanto): página com a marca Resolutto que vira PDF pela impressão do navegador. Blocos do modelo atual: cabeçalho (mês, cartão, família, Wealth Advisor), visão consolidada (total, maior categoria, parcelas a vencer), gráfico por categoria, resumo executivo, detalhamento por categoria e comprometimento futuro. Usa as categorias da própria família. O nome do consultor aparece quando quem gera é o consultor (a família não lê a tabela de consultores).
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").
