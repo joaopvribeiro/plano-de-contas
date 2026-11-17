@@ -36,6 +36,15 @@ export function EnviarExtrato({
   const [etapa, setEtapa] = useState<Etapa>("parado");
   const [erro, setErro] = useState<string | null>(null);
   const [, iniciar] = useTransition();
+  // Trocar a chave recria o campo de arquivo vazio.
+  const [chaveCampo, setChaveCampo] = useState(0);
+
+  // O Next mantém o estado desta tela ao voltar da revisão: deixa tudo pronto para o próximo envio.
+  function limpar() {
+    setArquivos([]);
+    setEtapa("parado");
+    setChaveCampo((k) => k + 1);
+  }
 
   const precisaIA = arquivos.some((a) => {
     const f = formatoDoArquivo(a.name, a.type);
@@ -76,6 +85,7 @@ export function EnviarExtrato({
         router.refresh();
         return;
       }
+      limpar();
       router.push(`/lancamentos/importar/${nova.id}`);
     });
   }
@@ -106,6 +116,7 @@ export function EnviarExtrato({
           <span className="text-xs text-muted">PDF ou fotos da mesma fatura (até 4), ou um OFX/CSV exportado do banco</span>
         </label>
         <input
+          key={chaveCampo}
           id="arquivos"
           type="file"
           multiple

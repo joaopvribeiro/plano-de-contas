@@ -96,4 +96,9 @@ test("descartar uma importação apaga a leitura da fila", async ({ page }) => {
   await page.getByRole("button", { name: "Descartar importação" }).click();
   await expect(page).toHaveURL(/\/lancamentos\/importar$/);
   await expect(page.getByText("Descartada").first()).toBeVisible();
+  // A tela volta pronta para outro envio (o Next preserva o estado da página ao voltar).
+  await expect(page.getByText("Escolher arquivos")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
+  await page.locator("#arquivos").setInputFiles({ name: "mais.csv", mimeType: "text/csv", buffer: Buffer.from("Data;Descrição;Valor\n02/06/2027;Uber;-25,00\n") });
+  await expect(page.getByRole("button", { name: "Ler arquivo" })).toBeEnabled();
 });

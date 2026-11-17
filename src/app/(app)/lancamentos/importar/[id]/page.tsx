@@ -83,7 +83,7 @@ export default async function PaginaRevisao({ params, searchParams }: PageProps<
       {voltar}
       <RevisaoImportacao
         id={id}
-        conta={{ nome: rev.conta.nome, cartao: rev.conta.tipo === "cartao_credito" }}
+        conta={{ nome: rev.conta.nome, cartao: rev.mes_fatura !== null }}
         documento={{
           tipo: rev.documento.tipo,
           banco: rev.documento.banco,
