@@ -8,7 +8,7 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { formatData, jaPassou } from "@/lib/format";
 import { entrarNaFamilia } from "@/app/actions/sessao";
 import { cancelarConvite } from "@/app/actions/consultor";
-import { FormConvite, FormHorizonte } from "../../forms";
+import { FormConvite, FormHorizonte, FormLimitesIA } from "../../forms";
 import { CopiarLink } from "./copiar-link";
 import { EstruturarFamilia } from "./estruturar";
 
@@ -17,7 +17,7 @@ export default async function PaginaFamilia({ params }: PageProps<"/consultor/fa
   if (!z.uuid().safeParse(id).success) notFound();
 
   const supabase = await criarClienteServidor();
-  const [{ data: familia }, { data: membros }, { data: convites }] = await Promise.all([
+  const [{ data: familia }, { data: membros }, { data: convites }, { data: limites }] = await Promise.all([
     supabase.from("familias").select("id, nome, inicio_planejamento, meses_horizonte, saldo_inicial_caixa").eq("id", id).maybeSingle(),
     supabase.from("membros").select("user_id, nome, criado_em").eq("familia_id", id).order("nome"),
     supabase
@@ -26,6 +26,7 @@ export default async function PaginaFamilia({ params }: PageProps<"/consultor/fa
       .eq("familia_id", id)
       .is("aceito_em", null)
       .order("criado_em", { ascending: false }),
+    supabase.from("limites_ia").select("extrato_mes, apolice_mes, insight_mes").eq("familia_id", id).maybeSingle(),
   ]);
   if (!familia) notFound();
 
@@ -113,9 +114,11 @@ export default async function PaginaFamilia({ params }: PageProps<"/consultor/fa
             meses={familia.meses_horizonte}
             saldo={Number(familia.saldo_inicial_caixa)}
           />
-          <p className="mt-6 text-xs text-muted">
-            Contas, metas por classe, limites de IA e premissas de objetivos ganham tela nas próximas etapas.
+          <h2 className="mt-8 mb-1 text-lg font-semibold">Limites de IA por mês</h2>
+          <p className="mb-4 text-sm text-muted">
+            Quantas leituras com IA a família pode fazer por mês. Extratos, faturas e relatórios de investimentos dividem o mesmo limite.
           </p>
+          <FormLimitesIA familiaId={familia.id} limites={limites ?? { extrato_mes: 20, apolice_mes: 5, insight_mes: 4 }} />
         </Cartao>
       </div>
     </>

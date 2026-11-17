@@ -9,7 +9,7 @@ export const VERSAO_CONSENTIMENTO_IA = "ia-v1";
 
 export type SituacaoIA = { consentimento: boolean; disponivel: boolean; usados: number; limite: number; restantes: number };
 
-export async function situacaoIA(familiaId: string, recurso: "extrato" | "relatorio" | "apolice" = "extrato"): Promise<SituacaoIA> {
+export async function situacaoIA(familiaId: string, recurso: "extrato" | "relatorio" | "apolice" | "insight" = "extrato"): Promise<SituacaoIA> {
   const supabase = await criarClienteServidor();
   const [{ data: ok }, { data: uso }] = await Promise.all([
     supabase.rpc("familia_tem_consentimento_ia", { p_familia: familiaId, p_versao: VERSAO_CONSENTIMENTO_IA }),

@@ -24,6 +24,7 @@ export type LancamentoGasto = {
   descricao: string;
   parcela: string | null;
   mes_competencia: string;
+  assinatura?: boolean;
 };
 
 export type Filtro = "todas" | "cartoes" | "contas" | string;

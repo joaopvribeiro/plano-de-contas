@@ -241,3 +241,62 @@ export async function excluirPassivo(id: string): Promise<Resultado> {
   revalidar();
   return {};
 }
+
+// ---------------------------------------------------------------------------
+// Importação por planilha
+// ---------------------------------------------------------------------------
+
+const esquemaLinhaPlanilhaAtivo = z.object({
+  nome: z.string().trim().min(1).max(120),
+  categoria: z.enum(["Reserva", "Investimentos", "Previdência", "Fundo Fechado", "FGTS", "Bem"]),
+  instituicao: z.string().trim().max(80).nullable(),
+  produto: z.string().trim().max(80).nullable(),
+  previdencia_tipo: z.enum(["PGBL", "VGBL"]).nullable(),
+  valor: z.number().finite().min(0).max(1e12),
+  data_saldo: data,
+  liquidez: z.string().trim().max(40).nullable(),
+  risco: z.enum(RISCOS).nullable(),
+  ativo_id: z.uuid().nullable(),
+});
+
+/** Grava as linhas da planilha: atualiza os ativos que já existem e cria os novos, numa única operação. */
+export async function importarAtivosPlanilha(linhas: z.input<typeof esquemaLinhaPlanilhaAtivo>[]): Promise<{ erro?: string; atualizados?: number; criados?: number }> {
+  const { familia } = await obterFamiliaAtiva();
+  const p = z.array(esquemaLinhaPlanilhaAtivo).min(1, "Nenhuma linha válida para importar.").max(500).safeParse(linhas);
+  if (!p.success) return { erro: p.error.issues[0].message.startsWith("Nenhuma") ? p.error.issues[0].message : "Há linhas inválidas. Recarregue a planilha." };
+  const hoje = hojeISO();
+  if (p.data.some((l) => l.data_saldo > hoje)) return { erro: "Há saldos com data no futuro." };
+
+  const supabase = await criarClienteServidor();
+  const ids = [...new Set(p.data.flatMap((l) => (l.ativo_id ? [l.ativo_id] : [])))];
+  if (ids.length !== p.data.filter((l) => l.ativo_id).length) return { erro: "Duas linhas atualizam o mesmo ativo." };
+  const { data: existentes } = ids.length
+    ? await supabase.from("ativos").select("id, categoria, reserva_valor").eq("familia_id", familia.id).in("id", ids)
+    : { data: [] as { id: string; categoria: string; reserva_valor: number | null }[] };
+  const porId = new Map((existentes ?? []).map((a) => [a.id, a]));
+  for (const id of ids) {
+    const a = porId.get(id);
+    if (!a) return { erro: "Um dos ativos não existe mais. Recarregue a planilha." };
+    if (a.categoria === "Equity" || a.categoria === "Consórcio") return { erro: "Equity e Consórcio não são atualizados por planilha." };
+  }
+
+  const registros = p.data.map(({ ativo_id, ...l }) => {
+    // Parte separada como reserva continua valendo (até o novo saldo), só em Investimentos.
+    const parte = ativo_id ? Number(porId.get(ativo_id)?.reserva_valor ?? 0) : 0;
+    const reserva = l.categoria === "Investimentos" && parte > 0 ? Math.min(parte, l.valor) : 0;
+    return {
+      ...(ativo_id ? { id: ativo_id } : {}),
+      ...l,
+      familia_id: familia.id,
+      valor_liquido: null,
+      reserva_valor: reserva > 0 ? reserva : null,
+    };
+  });
+  const { error } = await supabase.from("ativos").upsert(registros, { onConflict: "id", defaultToNull: false });
+  if (error) {
+    console.error("[patrimonio] planilha", error.code);
+    return { erro: "Não foi possível gravar os ativos. Nada foi gravado; tente de novo." };
+  }
+  revalidar();
+  return { atualizados: ids.length, criados: p.data.length - ids.length };
+}

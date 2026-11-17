@@ -183,3 +183,26 @@ export async function excluirRegraModelo(fd: FormData) {
   await supabase.from("regras_modelo").delete().eq("id", id);
   revalidatePath("/consultor/regras-padrao");
 }
+
+/** Limites mensais de IA da família. Só o consultor da família grava (RLS de limites_ia). */
+export async function salvarLimitesIA(_: EstadoForm, formData: FormData): Promise<EstadoForm> {
+  const n = z.coerce.number().int("Use números inteiros.").min(0, "O limite não pode ser negativo.").max(200, "No máximo 200 por mês.");
+  const dados = z
+    .object({ familia_id: z.uuid(), extrato_mes: n, apolice_mes: n, insight_mes: n })
+    .safeParse({
+      familia_id: formData.get("familia_id"),
+      extrato_mes: formData.get("extrato_mes"),
+      apolice_mes: formData.get("apolice_mes"),
+      insight_mes: formData.get("insight_mes"),
+    });
+  if (!dados.success) return { erro: dados.error.issues[0].message };
+
+  const supabase = await criarClienteServidor();
+  const { error } = await supabase
+    .from("limites_ia")
+    .upsert({ ...dados.data, atualizado_em: new Date().toISOString() }, { onConflict: "familia_id" });
+  if (error) return { erro: "Não foi possível salvar os limites." };
+  revalidatePath(`/consultor/familias/${dados.data.familia_id}`);
+  revalidatePath("/consultor");
+  return { ok: "Limites salvos." };
+}

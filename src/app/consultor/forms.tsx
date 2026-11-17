@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Aviso, Botao, Campo } from "@/components/ui";
-import { atualizarHorizonte, convidarMembro, criarFamilia } from "@/app/actions/consultor";
+import { atualizarHorizonte, convidarMembro, criarFamilia, salvarLimitesIA } from "@/app/actions/consultor";
 import type { EstadoForm } from "@/app/actions/auth";
 
 function Retorno({ estado }: { estado: EstadoForm }) {
@@ -80,6 +80,24 @@ export function FormHorizonte({
       </div>
       <Botao type="submit" variante="secundario" disabled={enviando} className="self-start">
         {enviando ? "Salvando…" : "Salvar horizonte"}
+      </Botao>
+    </form>
+  );
+}
+
+export function FormLimitesIA({ familiaId, limites }: { familiaId: string; limites: { extrato_mes: number; apolice_mes: number; insight_mes: number } }) {
+  const [estado, acao, enviando] = useActionState(salvarLimitesIA, undefined);
+  return (
+    <form action={acao} className="flex flex-col gap-3">
+      <input type="hidden" name="familia_id" value={familiaId} />
+      <Retorno estado={estado} />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Campo rotulo="Extratos e relatórios" id="extrato_mes" type="number" min={0} max={200} defaultValue={limites.extrato_mes} required />
+        <Campo rotulo="Apólices" id="apolice_mes" type="number" min={0} max={200} defaultValue={limites.apolice_mes} required />
+        <Campo rotulo="Análises do mês" id="insight_mes" type="number" min={0} max={200} defaultValue={limites.insight_mes} required />
+      </div>
+      <Botao type="submit" variante="secundario" disabled={enviando} className="self-start">
+        {enviando ? "Salvando…" : "Salvar limites"}
       </Botao>
     </form>
   );
