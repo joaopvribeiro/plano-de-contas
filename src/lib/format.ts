@@ -14,6 +14,11 @@ export function formatBRL(valor: number | null | undefined): string {
 }
 
 /** "2026-11-05" → "05/11/2026" */
+/** Data de um instante (timestamptz) no fuso de São Paulo: "2026-11-17T01:30Z" → "16/11/2026". */
+export function formatDataHora(instante: string): string {
+  return new Date(instante).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
 export function formatData(iso: string | null | undefined): string {
   if (!iso) return "—";
   const [a, m, d] = iso.slice(0, 10).split("-");

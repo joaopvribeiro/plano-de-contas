@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBRL, formatData, formatMesCurto, mesAtual, mesesDoHorizonte, parseData, somarMeses } from "./format";
+import { formatBRL, formatData, formatDataHora, formatMesCurto, mesAtual, mesesDoHorizonte, parseData, somarMeses } from "./format";
 
 describe("format", () => {
   it("formata reais no padrão R$ 1.234,56", () => {
@@ -24,5 +24,11 @@ describe("format", () => {
   it("mês atual segue o fuso de São Paulo", () => {
     // 01/12/2026 01:30 UTC ainda é 30/11/2026 em São Paulo.
     expect(mesAtual(new Date("2026-12-01T01:30:00Z"))).toBe("2026-11");
+  });
+});
+
+describe("formatDataHora", () => {
+  it("usa o fuso de São Paulo", () => {
+    expect(formatDataHora("2026-11-17T01:30:00Z")).toBe("16/11/2026");
   });
 });

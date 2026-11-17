@@ -24,7 +24,7 @@ export default async function PaginaRevisao({ params, searchParams }: PageProps<
   );
 
   const supabase = await criarClienteServidor();
-  const { data: imp } = await supabase.from("importacoes").select("status, resposta_ia").eq("familia_id", familia.id).eq("id", id).maybeSingle();
+  const { data: imp } = await supabase.from("importacoes").select("status, resposta_ia").eq("familia_id", familia.id).eq("tipo", "extrato").eq("id", id).maybeSingle();
   if (!imp) notFound();
 
   if (imp.status === "lendo") {

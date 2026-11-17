@@ -69,6 +69,9 @@ begin
   cross join (values ('2026-08-31', 0.955), ('2026-09-30', 0.972), ('2026-10-31', 0.988)) h(dt, fator)
   where a.familia_id = f and a.categoria in ('Reserva', 'Investimentos', 'Previdência', 'Fundo Fechado', 'FGTS');
 
+  -- Um bem com saldo antigo, para mostrar o aviso de "sem atualizar há mais de 45 dias".
+  update public.ativos set data_saldo = '2026-06-30' where id = '0d0d0d0d-0000-4000-8000-0000000000a9';
+
   insert into public.passivos (familia_id, nome, tipo, instituicao, saldo_devedor, parcela_mensal, taxa_am, parcelas_restantes)
   values (f, 'Financiamento do carro', 'financiamento_veiculo', 'Banco do Brasil', 32000, 1450, 1.49, 24);
 

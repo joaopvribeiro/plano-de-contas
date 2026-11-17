@@ -97,6 +97,20 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Arquivo original apagado** do Storage ao confirmar ou descartar (`arquivos_expurgados_em`). A leitura (`resposta_ia`) fica guardada até a política de expurgo da Etapa 9.
 - **Envio direto ao Storage** pelo navegador (com a regra de acesso do bucket), para não esbarrar no limite de tamanho das ações do servidor. A leitura roda numa ação de até 300 s.
 
+## Etapa 5
+
+- **Totais**: carteira investida = Reserva + Investimentos + Previdência + Fundo Fechado. Patrimônio líquido = carteira + FGTS + bens − dívidas. Direitos futuros = soma das cartas de consórcio. Patrimônio com direitos = patrimônio líquido + direito líquido dos consórcios.
+- **Direito líquido do consórcio**: não contemplado = o que já foi pago (parcelas pagas × parcela); contemplado = carta − saldo a pagar (nunca negativo). A carta cheia aparece só como "Direitos futuros".
+- **Data do saldo** (`ativos.data_saldo`, `passivos.data_saldo`): o histórico grava o ponto nessa data, não na data do cadastro. Relatório usa a data de referência; atualização manual pede a data. Um ponto por ativo e dia.
+- **Saldo desatualizado**: mais de 45 dias desde a data do saldo, em âmbar.
+- **Evolução**: saldo no fim de cada mês (último ponto até lá), 12 meses, sem consórcios. Bens e dívidas valem desde antes do cadastro (o primeiro saldo conhecido), para não criar salto falso no mês em que foram lançados. A série começa no primeiro mês com saldo de carteira, FGTS ou previdência.
+- **Ativo zerado** (resgatado) some do balanço e dos totais, mas mantém o histórico.
+- **Relatório de investimentos**: um PDF por vez; uma posição = um ativo; saldo bruto sempre, líquido guardado quando o relatório traz. Caixa da corretora entra como posição "Saldo em conta". Conferência: soma das posições contra o patrimônio bruto (tolerância R$ 1 ou 0,01%).
+- **Mês a mês**: cada posição guarda uma chave (instituição + nome + vencimento + taxa) e, no relatório seguinte, atualiza o mesmo ativo mantendo a categoria escolhida. Ativo manual da mesma instituição com o mesmo nome também é reconhecido. Ativos da instituição que não vieram no relatório são sugeridos para zerar (marcados se vieram de relatório; desmarcados se manuais).
+- **Reserva sugerida**: caixa e pós-fixados D+0/D+1 de posições novas, completando a meta com a menor posição que cobre o que falta (ou a maior, se nenhuma cobre, e repete). Conta o que já é Reserva em outras instituições. O consultor muda na revisão.
+- **Cota de IA**: relatórios e extratos dividem as 20 leituras mensais.
+- **Confirmação numa transação só** (`confirmar_relatorio`), com a RLS valendo; valores vêm da leitura guardada no servidor. O PDF é apagado ao confirmar ou descartar.
+
 ## Pendente de decisão
 
 - Domínio final e nome do produto (hoje "[Resolutto Family]").

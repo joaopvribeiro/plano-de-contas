@@ -4,7 +4,7 @@ import { Aviso, Cartao, Selo } from "@/components/ui";
 import { obterFamiliaAtiva } from "@/lib/sessao";
 import { carregarCadastros } from "@/lib/lancamentos/consultas";
 import { listarImportacoes, situacaoIA } from "@/lib/importacao/consultas";
-import { formatData } from "@/lib/format";
+import { formatDataHora } from "@/lib/format";
 import { EnviarExtrato } from "./enviar";
 import { ConsentimentoIA } from "./consentimento";
 
@@ -65,7 +65,7 @@ export default async function PaginaImportar() {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{h.nomes_arquivos.join(", ") || "Arquivo"}</span>
                       <span className="block text-xs text-muted">
-                        {formatData(h.criado_em.slice(0, 10))} · {h.conta ?? "conta removida"}
+                        {formatDataHora(h.criado_em)} · {h.conta ?? "conta removida"}
                         {h.status === "confirmada" && ` · ${h.gravados} lançamento${h.gravados === 1 ? "" : "s"}`}
                         {h.status !== "confirmada" && h.itens !== null && ` · ${h.itens} lido${h.itens === 1 ? "" : "s"}`}
                         {h.status === "lendo" && h.erro && ` · ${h.erro}`}
