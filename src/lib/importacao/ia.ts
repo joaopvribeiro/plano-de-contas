@@ -22,6 +22,7 @@ import {
 import type { DocumentoLido } from "./tipos";
 import { ESQUEMA_RELATORIO, INSTRUCOES_RELATORIO, interpretarRelatorio, type RelatorioLido } from "@/lib/relatorio/esquema";
 import { RELATORIO_EXEMPLO } from "@/lib/relatorio/exemplo";
+import { APOLICE_EXEMPLO, ESQUEMA_APOLICE, INSTRUCOES_APOLICE, interpretarApolice, type DadosApolice } from "@/lib/apolices/modelo";
 
 export const MODELO_EXTRACAO = process.env.ANTHROPIC_MODEL_EXTRACAO || "claude-haiku-5-5";
 const MAX_TOKENS = 32000;
@@ -145,6 +146,28 @@ export async function lerRelatorioComIA(pdf: Uint8Array): Promise<{ rel?: Relato
     return { rel, uso: r.uso };
   } catch (e) {
     console.error("[relatorio] erro na IA", e instanceof Error ? e.message : e);
+    return { erro: mensagemDeErro(e) };
+  }
+}
+
+/** Lê uma apólice (PDF ou fotos das páginas). */
+export async function lerApoliceComIA(arquivos: ArquivoParaIA[]): Promise<{ apolice?: DadosApolice & { avisos: string[] }; erro?: string; uso?: UsoIA }> {
+  if (iaSimulada()) return { apolice: structuredClone(APOLICE_EXEMPLO), uso: { modelo: "simulado", entrada: 0, saida: 0 } };
+  if (!process.env.ANTHROPIC_API_KEY) return { erro: "A leitura com IA ainda não foi configurada (falta a chave da Anthropic)." };
+  const conteudo: Anthropic.ContentBlockParam[] = arquivos.map((a) =>
+    a.formato === "pdf"
+      ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64(a.bytes) } }
+      : { type: "image", source: { type: "base64", media_type: a.tipoMime as "image/png" | "image/jpeg" | "image/webp", data: base64(a.bytes) } },
+  );
+  conteudo.push({ type: "text", text: arquivos.length > 1 ? "Os arquivos acima são páginas do mesmo documento, em ordem. Preencha os campos." : "Preencha os campos a partir do documento acima." });
+  try {
+    const r = await chamar(INSTRUCOES_APOLICE, conteudo, ESQUEMA_APOLICE);
+    if ("erro" in r && r.erro) return { erro: r.erro, uso: r.uso };
+    const apolice = interpretarApolice(r.json);
+    if ("erro" in apolice) return { erro: apolice.erro, uso: r.uso };
+    return { apolice, uso: r.uso };
+  } catch (e) {
+    console.error("[apolice] erro na IA", e instanceof Error ? e.message : e);
     return { erro: mensagemDeErro(e) };
   }
 }

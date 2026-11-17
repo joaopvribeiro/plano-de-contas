@@ -16,14 +16,15 @@ export function ConsentimentoIA({ consultor }: { consultor: boolean }) {
       </h3>
       <div className="flex flex-col gap-2 text-sm text-muted">
         <p>
-          Para ler PDFs e fotos, o arquivo é enviado à Anthropic, empresa responsável pela IA Claude, que devolve as transações. Os
-          dados enviados por esse canal não são usados para treinar modelos.
+          Para ler PDFs e fotos (extratos, faturas, relatórios de investimento e apólices), o arquivo é enviado à Anthropic, empresa
+          responsável pela IA Claude, que devolve o conteúdo lido. Os dados enviados por esse canal não são usados para treinar modelos.
         </p>
         <p>
-          O arquivo original é apagado daqui assim que a importação é confirmada ou descartada. Em OFX e CSV, só a descrição, o sentido e
-          o valor das linhas sem regra vão para a IA, para sugerir a categoria.
+          Extratos, faturas e relatórios: o arquivo original é apagado daqui assim que a importação é confirmada ou descartada. Apólices: o
+          PDF fica guardado para consulta e sai junto quando a apólice é excluída. Em OFX e CSV, só a descrição, o sentido e o valor das
+          linhas sem regra vão para a IA, para sugerir a categoria.
         </p>
-        <p>Sem esta autorização, você ainda pode importar OFX e CSV, sem sugestões da IA.</p>
+        <p>Sem esta autorização, você ainda pode importar OFX e CSV e cadastrar tudo à mão.</p>
       </div>
       {erro && <Aviso tom="negativo">{erro}</Aviso>}
       <div>

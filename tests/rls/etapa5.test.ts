@@ -116,3 +116,17 @@ describe("confirmar relatório", () => {
     expect(r.ok).toBe(false);
   });
 });
+
+describe("apólices (Etapa 7)", () => {
+  it("importação de apólice e vínculo só com importação da própria família", async () => {
+    const impB = await superuser(async (c) => (await c.query("insert into public.importacoes (familia_id, tipo) values ($1, 'apolice') returning id", [s.B.id])).rows[0].id);
+    const ok = await como(s.membroA, async (c) => {
+      const imp = (await c.query("insert into public.importacoes (familia_id, tipo) values ($1, 'apolice') returning id", [s.A.id])).rows[0].id;
+      await c.query("insert into public.apolices (familia_id, tipo, importacao_id) values ($1, 'vida', $2)", [s.A.id, imp]);
+      return true;
+    });
+    expect(ok.ok).toBe(true);
+    const cruzado = await como(s.membroA, (c) => c.query("insert into public.apolices (familia_id, tipo, importacao_id) values ($1, 'vida', $2)", [s.A.id, impB]));
+    expect(cruzado.ok).toBe(false);
+  });
+});
