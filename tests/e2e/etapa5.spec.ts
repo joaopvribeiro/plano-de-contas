@@ -121,3 +121,16 @@ test("relatório: conferência, reserva até a meta, confirmação e mês seguin
   await page.getByRole("button", { name: "Confirmar 14 posições" }).click();
   await expect(page.getByText("14 ativos atualizados.", { exact: false })).toBeVisible();
 });
+
+test("parte de um investimento como reserva", async ({ page }) => {
+  await page.goto("/patrimonio");
+  await page.getByRole("button", { name: "Editar ETF Ibovespa" }).click();
+  const d = page.getByRole("dialog");
+  await expect(d.getByText(/Meta da reserva: R\$/)).toBeVisible();
+  await d.getByLabel("Valor na reserva (R$)").fill("10.000");
+  await d.getByRole("button", { name: "Salvar alterações" }).click();
+  const reserva = page.getByRole("listitem").filter({ hasText: "Parte reservada de um investimento" });
+  await expect(reserva).toContainText("ETF Ibovespa");
+  await expect(reserva).toContainText("R$ 10.000,00");
+  await expect(page.getByRole("listitem").filter({ hasText: /dos quais R\$ 10\.000,00 contam como reserva/ })).toBeVisible();
+});

@@ -14,7 +14,7 @@ export async function carregarPatrimonio(familiaId: string, mesesEvolucao = 12) 
     supabase
       .from("ativos")
       .select(
-        "id, nome, categoria, instituicao, produto, valor, valor_liquido, liquidez, risco, data_saldo, origem, conta_liberdade, previdencia_tipo, equity_participacao, equity_metodo, equity_base, equity_multiplo, consorcio_prazo_meses, consorcio_parcelas_pagas, consorcio_parcela_mensal, consorcio_contemplado",
+        "id, nome, categoria, instituicao, produto, valor, valor_liquido, liquidez, risco, data_saldo, origem, conta_liberdade, previdencia_tipo, reserva_valor, equity_participacao, equity_metodo, equity_base, equity_multiplo, consorcio_prazo_meses, consorcio_parcelas_pagas, consorcio_parcela_mensal, consorcio_contemplado",
       )
       .eq("familia_id", familiaId)
       .order("valor", { ascending: false }),
@@ -32,6 +32,7 @@ export async function carregarPatrimonio(familiaId: string, mesesEvolucao = 12) 
     valor: Number(x.valor),
     valor_liquido: n(x.valor_liquido),
     consorcio_parcela_mensal: n(x.consorcio_parcela_mensal),
+    reserva_valor: n(x.reserva_valor),
     equity_participacao: n(x.equity_participacao),
     equity_base: n(x.equity_base),
     equity_multiplo: n(x.equity_multiplo),

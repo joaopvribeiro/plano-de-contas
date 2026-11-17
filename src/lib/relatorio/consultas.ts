@@ -2,6 +2,7 @@ import "server-only";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { carregarDashboard } from "@/lib/dashboard/consultas";
 import { metaDaReserva } from "@/lib/dfc";
+import { totalReserva } from "@/lib/patrimonio";
 import { mesmaInstituicao, montarRevisaoRelatorio, conferirRelatorio, type AtivoExistente, type LinhaRelatorio, type Sumido, type ConferenciaRelatorio } from "./revisao";
 import type { RelatorioLido } from "./esquema";
 
@@ -67,18 +68,16 @@ export async function carregarRevisaoRelatorio(familiaId: string, id: string): P
   const [{ data: ativos }, dash] = await Promise.all([
     supabase
       .from("ativos")
-      .select("id, nome, categoria, instituicao, valor, origem, chave_relatorio")
+      .select("id, nome, categoria, instituicao, valor, origem, chave_relatorio, reserva_valor")
       .eq("familia_id", familiaId)
       .neq("categoria", "Consórcio")
       .order("nome"),
     carregarDashboard(familiaId),
   ]);
-  const existentes = ((ativos ?? []) as AtivoExistente[]).map((a) => ({ ...a, valor: Number(a.valor) }));
+  const existentes = ((ativos ?? []) as AtivoExistente[]).map((a) => ({ ...a, valor: Number(a.valor), reserva_valor: a.reserva_valor == null ? null : Number(a.reserva_valor) }));
   const reserva = {
     meta: metaDaReserva(dash.dfc, dash.reservaMeses),
-    foraDoRelatorio: existentes
-      .filter((a) => a.categoria === "Reserva" && !mesmaInstituicao(a.instituicao, rel.instituicao))
-      .reduce((s, a) => s + a.valor, 0),
+    foraDoRelatorio: totalReserva(existentes.filter((a) => !mesmaInstituicao(a.instituicao, rel.instituicao))),
   };
   const { linhas, sumidos } = montarRevisaoRelatorio(rel, rel.instituicao, existentes, reserva);
   return {

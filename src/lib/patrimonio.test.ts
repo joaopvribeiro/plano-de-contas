@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agrupar, consorcio, valorEquity, diasDesde, distribuir, evolucao, porInstituicao, resumir, type Ativo, type Passivo } from "./patrimonio";
+import { agrupar, consorcio, distribuirPorCategoria, totalReserva, valorEquity, diasDesde, distribuir, evolucao, porInstituicao, resumir, type Ativo, type Passivo } from "./patrimonio";
 
 const ativo = (p: Partial<Ativo>): Ativo => ({
   id: Math.random().toString(36), nome: "x", categoria: "Investimentos", instituicao: "XP", produto: null, valor: 100,
@@ -53,6 +53,30 @@ describe("equity", () => {
     expect(valorEquity("faturamento", 1_000_000, 1.5, 100)).toBe(1_500_000);
     const r = resumir([ativo({ categoria: "Equity", valor: 700_000 }), ativo({ categoria: "Investimentos", valor: 100 })], []);
     expect(r).toMatchObject({ carteira: 100, empresas: 700_000, patrimonioLiquido: 700_100 });
+  });
+});
+
+describe("reserva parcial", () => {
+  it("parte de um investimento conta como reserva no balanço e na distribuição, sem mudar a carteira", () => {
+    const fundo = ativo({ nome: "CDB Plus", categoria: "Investimentos", valor: 192_545.63, reserva_valor: 98_880 });
+    const outro = ativo({ nome: "Selic", categoria: "Reserva", valor: 10_000 });
+    expect(totalReserva([fundo, outro])).toBe(108_880);
+    const g = agrupar([fundo, outro]);
+    expect(g.map((x) => [x.categoria, x.subtotal, x.itens.map((i) => [i.nome, i.exibido, i.papel ?? null])])).toEqual([
+      ["Reserva", 108_880, [["CDB Plus", 98_880, "parte-reserva"], ["Selic", 10_000, null]]],
+      ["Investimentos", 93_665.63, [["CDB Plus", 93_665.63, "com-reserva"]]],
+    ]);
+    expect(distribuirPorCategoria([fundo, outro]).map((f) => [f.rotulo, f.valor])).toEqual([
+      ["Reserva", 108_880],
+      ["Investimentos", 93_665.63],
+    ]);
+    expect(resumir([fundo, outro], []).carteira).toBe(202_545.63);
+  });
+
+  it("parte maior que o saldo fica limitada ao saldo", () => {
+    const fundo = ativo({ categoria: "Investimentos", valor: 50_000, reserva_valor: 98_880 });
+    expect(totalReserva([fundo])).toBe(50_000);
+    expect(agrupar([fundo]).map((g) => g.categoria)).toEqual(["Reserva"]);
   });
 });
 
