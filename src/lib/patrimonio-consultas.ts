@@ -14,7 +14,7 @@ export async function carregarPatrimonio(familiaId: string, mesesEvolucao = 12) 
     supabase
       .from("ativos")
       .select(
-        "id, nome, categoria, instituicao, produto, valor, valor_liquido, liquidez, risco, data_saldo, origem, consorcio_prazo_meses, consorcio_parcelas_pagas, consorcio_parcela_mensal, consorcio_contemplado",
+        "id, nome, categoria, instituicao, produto, valor, valor_liquido, liquidez, risco, data_saldo, origem, conta_liberdade, consorcio_prazo_meses, consorcio_parcelas_pagas, consorcio_parcela_mensal, consorcio_contemplado",
       )
       .eq("familia_id", familiaId)
       .order("valor", { ascending: false }),

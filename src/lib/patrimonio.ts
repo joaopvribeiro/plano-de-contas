@@ -47,6 +47,8 @@ export type Ativo = {
   risco: Risco | null;
   data_saldo: string;
   origem: "manual" | "relatorio";
+  /** Entra na conta da liberdade financeira (Objetivos). */
+  conta_liberdade?: boolean | null;
   consorcio_prazo_meses: number | null;
   consorcio_parcelas_pagas: number | null;
   consorcio_parcela_mensal: number | null;
