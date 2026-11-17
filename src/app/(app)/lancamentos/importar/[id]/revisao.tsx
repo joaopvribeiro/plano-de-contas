@@ -7,12 +7,13 @@ import { Aviso, Botao, Caixa, Cartao, Selo, cn } from "@/components/ui";
 import { confirmarImportacao, descartarImportacao } from "@/app/actions/importacao";
 import { CLASSES, NATUREZAS, ROTULO_NATUREZA, type Classe, type Natureza } from "@/lib/dominio";
 import { formatBRL, formatData, formatMesCurto } from "@/lib/format";
-import { sugerirPadrao } from "@/lib/lancamentos/regras-de-negocio";
+import { normalizarDescricao, sugerirPadrao } from "@/lib/lancamentos/regras-de-negocio";
 import { conferirTotal, editarLinha, parcelasFuturas, pendenciaDaLinha, type LinhaRevisao } from "@/lib/importacao/revisao";
 import type { DocumentoLido } from "@/lib/importacao/tipos";
 
 type Categoria = { id: string; nome: string; classe_padrao: Classe };
-type LinhaTela = LinhaRevisao & { criar_regra: boolean };
+type LinhaTela = LinhaRevisao & { criar_regra: boolean; padrao_regra: string };
+type Mudanca = Parameters<typeof editarLinha>[1] & { criar_regra?: boolean; padrao_regra?: string };
 
 const ROTULO_SUGESTAO = { regra: "regra", ia: "sugestão da IA", padrao: "padrão", manual: "ajustada" } as const;
 const ORIGEM = { ofx: "OFX", csv: "CSV", ia: "leitura com IA" } as const;
@@ -37,19 +38,19 @@ export function RevisaoImportacao({
   mesFatura: string | null;
 }) {
   const router = useRouter();
-  const [linhas, setLinhas] = useState<LinhaTela[]>(() => linhasIniciais.map((l) => ({ ...l, criar_regra: false })));
+  const [linhas, setLinhas] = useState<LinhaTela[]>(() => linhasIniciais.map((l) => ({ ...l, criar_regra: false, padrao_regra: sugerirPadrao(l.descricao) })));
   const [mesFatura, setMesFatura] = useState(mesFaturaInicial ?? linhasIniciais[0]?.mes_competencia ?? "");
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
 
-  function mudar(idx: number, m: Parameters<typeof editarLinha>[1] & { criar_regra?: boolean }) {
+  function mudar(idx: number, m: Mudanca) {
     setErro(null);
     setLinhas((ls) =>
       ls.map((l) => {
         if (l.idx !== idx) return l;
-        const { criar_regra, ...resto } = m;
-        const nova = editarLinha(l, resto, categorias);
-        return { ...nova, criar_regra: criar_regra ?? l.criar_regra };
+        const { criar_regra, padrao_regra, ...resto } = m;
+        const nova = Object.keys(resto).length ? editarLinha(l, resto, categorias) : l;
+        return { ...nova, criar_regra: criar_regra ?? l.criar_regra, padrao_regra: padrao_regra ?? l.padrao_regra };
       }),
     );
   }
@@ -62,6 +63,8 @@ export function RevisaoImportacao({
   const resumo = useMemo(() => {
     const marcadas = linhas.filter((l) => l.incluir);
     const pendentes = marcadas.filter((l) => pendenciaDaLinha(l)).length;
+    const regras = marcadas.filter((l) => l.criar_regra && l.sugestao !== "regra");
+    const regrasInvalidas = regras.filter((l) => !padraoValido(l)).length;
     let receitas = 0;
     let despesas = 0;
     for (const l of marcadas) {
@@ -71,7 +74,7 @@ export function RevisaoImportacao({
       else despesas += v;
     }
     const futuras = marcadas.filter((l) => l.criar_futuras && !l.vinculo).reduce((s, l) => s + parcelasFuturas(l).length, 0);
-    return { marcadas: marcadas.length, pendentes, receitas, despesas, futuras };
+    return { marcadas: marcadas.length, pendentes, receitas, despesas, futuras, regras: regras.length, regrasInvalidas };
   }, [linhas]);
 
   const conferencia = useMemo(() => conferirTotal({ ...documento, itens: [] } as DocumentoLido, linhas), [documento, linhas]);
@@ -90,6 +93,7 @@ export function RevisaoImportacao({
           mes_competencia: l.mes_competencia,
           criar_futuras: l.criar_futuras,
           criar_regra: l.criar_regra,
+          padrao_regra: l.padrao_regra,
         })),
       });
       if (r.erro) setErro(r.erro);
@@ -179,6 +183,12 @@ export function RevisaoImportacao({
           {resumo.receitas !== 0 && <span>Receitas {formatBRL(resumo.receitas)}</span>}
           {resumo.despesas !== 0 && <span>Despesas {formatBRL(resumo.despesas)}</span>}
           {resumo.futuras > 0 && <span>{resumo.futuras} parcelas futuras</span>}
+          {resumo.regras > 0 && <span>{resumo.regras} regra{resumo.regras === 1 ? "" : "s"} nova{resumo.regras === 1 ? "" : "s"}</span>}
+          {resumo.regrasInvalidas > 0 && (
+            <span className="font-semibold text-warning">
+              {resumo.regrasInvalidas} regra{resumo.regrasInvalidas === 1 ? "" : "s"} com texto que não aparece na descrição
+            </span>
+          )}
           {resumo.pendentes > 0 && (
             <span className="font-semibold text-warning">
               {resumo.pendentes} sem categoria
@@ -187,7 +197,7 @@ export function RevisaoImportacao({
         </div>
         {erro && <Aviso tom="negativo">{erro}</Aviso>}
         <div className="flex flex-wrap gap-2">
-          <Botao onClick={confirmar} disabled={pendente || resumo.marcadas === 0 || resumo.pendentes > 0}>
+          <Botao onClick={confirmar} disabled={pendente || resumo.marcadas === 0 || resumo.pendentes > 0 || resumo.regrasInvalidas > 0}>
             {pendente ? "Gravando…" : `Confirmar ${resumo.marcadas} lançamento${resumo.marcadas === 1 ? "" : "s"}`}
           </Botao>
           <Botao
@@ -220,7 +230,7 @@ function Linha({
   primeiraTransferencia: boolean;
   categorias: Categoria[];
   cartao: boolean;
-  onMudar: (m: Parameters<typeof editarLinha>[1] & { criar_regra?: boolean }) => void;
+  onMudar: (m: Mudanca) => void;
 }) {
   const pend = pendenciaDaLinha(l);
   const base = `l${l.idx}`;
@@ -316,7 +326,7 @@ function Linha({
         </div>
       )}
 
-      {l.incluir && (l.vinculo || futuras.length > 0 || l.sugestao === "manual") && (
+      {l.incluir && (l.vinculo || futuras.length > 0 || l.sugestao !== "regra") && (
         <div className="flex flex-col gap-1.5 pl-7">
           {l.vinculo && (
             <p className="flex items-center gap-1.5 text-xs text-muted">
@@ -332,18 +342,42 @@ function Linha({
               onChange={(e) => onMudar({ criar_futuras: e.target.checked })}
             />
           )}
-          {l.sugestao === "manual" && sugerirPadrao(l.descricao).length >= 2 && (
-            <Caixa
-              id={`${base}-regra`}
-              rotulo={`Criar regra para os próximos: "${sugerirPadrao(l.descricao)}"`}
-              checked={l.criar_regra}
-              onChange={(e) => onMudar({ criar_regra: e.target.checked })}
-            />
+          {l.sugestao !== "regra" && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <Caixa
+                id={`${base}-regra`}
+                rotulo="Criar regra para os próximos meses"
+                checked={l.criar_regra}
+                onChange={(e) => onMudar({ criar_regra: e.target.checked })}
+              />
+              {l.criar_regra && (
+                <span className="flex items-center gap-1.5 text-xs text-muted">
+                  <label htmlFor={`${base}-padrao`}>quando a descrição contiver</label>
+                  <input
+                    id={`${base}-padrao`}
+                    value={l.padrao_regra}
+                    maxLength={60}
+                    onChange={(e) => onMudar({ padrao_regra: e.target.value })}
+                    aria-invalid={!padraoValido(l) || undefined}
+                    className={cn(
+                      "h-8 w-44 rounded-md border bg-surface px-2 text-sm text-text uppercase",
+                      padraoValido(l) ? "border-border" : "border-warning",
+                    )}
+                  />
+                </span>
+              )}
+            </div>
           )}
         </div>
       )}
     </li>
   );
+}
+
+/** O padrão precisa ter 2 caracteres e aparecer na descrição desta linha. */
+function padraoValido(l: Pick<LinhaTela, "padrao_regra" | "descricao">) {
+  const p = normalizarDescricao(l.padrao_regra);
+  return p.length >= 2 && normalizarDescricao(l.descricao).includes(p);
 }
 
 function SeletorPequeno({

@@ -89,6 +89,9 @@ describe("regras aprendidas", () => {
   it("sugere padrão com a primeira palavra significativa", () => {
     expect(sugerirPadrao("PETZ*123 SP")).toBe("PETZ");
     expect(sugerirPadrao("15/10 Netflix.com")).toBe("NETFLIX");
+    expect(sugerirPadrao("S2P*1BIBLIOTECACA")).toBe("1BIBLIOTECACA");
+    expect(sugerirPadrao("PIX ENVIADO MARIA SILVA")).toBe("MARIA");
+    expect(sugerirPadrao("PAGAMENTO RECEBIDO")).toBe("PAGAMENTO");
   });
 });
 

@@ -93,7 +93,7 @@ Registro das decisões de produto e técnicas. Cada etapa acrescenta as suas.
 - **Parcelas**: "3/10" que casa com uma parcela prevista aberta da mesma compra (mesmo cartão, mesma parcela, valor ±R$ 1, descrição parecida) realiza essa prevista e herda a categoria dela. Sem prevista, a revisão oferece prever as parcelas seguintes (`ia-parcela`).
 - **Conferência**: fatura = compras − estornos (sem pagamentos) contra o total; extrato = entradas − saídas contra a variação do saldo. Diferença acima de R$ 0,05 aparece como aviso, sem bloquear.
 - **Confirmação numa transação só** (`confirmar_importacao`): grava tudo ou nada, com a RLS valendo. Data, valor e sentido vêm da leitura guardada no servidor, nunca do navegador.
-- **"Criar regra para os próximos"** aparece na revisão quando a pessoa corrige a categoria ou a natureza de uma linha.
+- **"Criar regra para os próximos meses"** em toda linha da revisão que não veio de regra (pedido do João, 16/11). O texto da regra vem sugerido (ignorando intermediadores como S2P, PAGSEGURO, PIX) e é editável; precisa aparecer na descrição da linha. A regra grava a natureza, a categoria e a classe escolhidas na linha.
 - **Arquivo original apagado** do Storage ao confirmar ou descartar (`arquivos_expurgados_em`). A leitura (`resposta_ia`) fica guardada até a política de expurgo da Etapa 9.
 - **Envio direto ao Storage** pelo navegador (com a regra de acesso do bucket), para não esbarrar no limite de tamanho das ações do servidor. A leitura roda numa ação de até 300 s.
 
